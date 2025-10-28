@@ -86,11 +86,8 @@ def mkdir_for_samples(samples_df, time_str):
     cache = []
     # 获取当前目录地址
     current_path = os.getcwd()
-    # 根据当前时间构建目录
-    if time_str:
-        os.makedirs(time_str, exist_ok=True)
     # 记录进一步的工作地址
-    work_path = os.path.join(current_path, time_str)
+    work_path = os.path.join(current_path, 'Storage', time_str)
 
     # 遍历DataFrame的每一行
     for index, row in samples_df.iterrows():

@@ -91,6 +91,6 @@ if __name__ == "__main__" :
         sys.exit(1)
     
     # 调用combine_features函数执行合并操作
-    print(f"\n开始合并 {len(target_files)} 个特征文件...")
+    print(f"开始合并 {len(target_files)} 个特征文件...")
     combine_features(target_files, features_dir)
     

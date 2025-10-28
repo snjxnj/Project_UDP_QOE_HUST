@@ -128,13 +128,8 @@ def test_merge(lib_path, output_path, ID = 1111, time = "20000101-000000"):
     # 按照时间顺序进行排序
     recv_result_sorted = recv_result.sort_values(by="frame.time_epoch", ascending=True)
     send_result_sorted = send_result.sort_values(by="frame.time_epoch", ascending=True)
-    print(recv_result_sorted)
-    print(send_result_sorted)
-    # 对recv_result_sorted和send_result_sorted进行IPv6地址过滤
-    # recv_result_filtered = filter_IPv6Add(recv_result_sorted)
-    # send_result_filtered = filter_IPv6Add(send_result_sorted)
-    # print(recv_result)
-    # print(send_result)
+    # print(recv_result_sorted)
+    # print(send_result_sorted)
 
     try:
         recv_result_sorted.to_csv(output_path + "merged_recv" + ".csv", index=False)

@@ -9,7 +9,6 @@ from datetime import datetime
 # 导入其他模块
 import translator_AddressList
 import sample_Collection_V1
-import IP_Collection_V1
 import search_CapFile
 
 def data_PreProcessing_V1():
@@ -32,22 +31,10 @@ def data_PreProcessing_V1():
     # print(sampels_with_IP_df)
     # print()
 
-    # 调用read_addresses_and_list_contents函数，以判断其中所有地址的合法性
-    # samples_df = sample_Collection_V1.read_addresses_and_list_contents()
-    # print("samples_df:")
-    # print(samples_df)
-    # print()
-
     # 调用mkdir_for_samples函数，以创建所有样本的目录
     samples_with_IP_Lib_df = sample_Collection_V1.mkdir_for_samples(sampels_with_IP_df, time_str)
     # print("samples_with_IP_Lib_df:")
     # print(samples_with_IP_Lib_df)
-    # print()
-
-    # 调用IP_Collection_for_GamingWZ函数进行测试
-    # samples_with_Lib_IP_df = IP_Collection_V1.IP_Collection(samples_with_Lib_df)
-    # print("samples_with_Lib_IP_df:")
-    # print(samples_with_Lib_IP_df)
     # print()
 
     # 调用search_CapFiles函数，以搜索所有样本的Cap文件
@@ -56,8 +43,8 @@ def data_PreProcessing_V1():
     # print(samples_with_IP_Lib_Cap_df)
     # print()
 
-    csvFile_for_CapOperation = os.path.join(current_path, time_str, "csvFiles_for_CapOperation.csv")
-    addressList_copoied = os.path.join(current_path, time_str, "address_List_copied.txt")
+    csvFile_for_CapOperation = os.path.join(current_path, 'Storage', time_str, "csvFiles_for_CapOperation.csv")
+    addressList_copoied = os.path.join(current_path, 'Storage', time_str, "address_List_copied.txt")
 
     samples_with_IP_Lib_Cap_csvCap_df = samples_with_IP_Lib_Cap_df
     samples_with_IP_Lib_Cap_csvCap_df['csvFiles_for_CapOperation'] = csvFile_for_CapOperation

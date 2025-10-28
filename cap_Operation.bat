@@ -54,7 +54,7 @@ if defined CSV_PATH (
         set "CAPFILE_ADD_COLUMN_INDEX=9"
 
         rem 遍历所有行（从第2行开始，跳过标题行）
-        echo Starting loop from row 2 to !TOTAL_LINES!
+        @REM echo Starting loop from row 2 to !TOTAL_LINES!
         for /l %%i in (2,1,!TOTAL_LINES!) do (
             echo Processing row %%i of !TOTAL_LINES!
             rem 首先读取每一行中各个列的内容
@@ -68,7 +68,7 @@ if defined CSV_PATH (
             call :ReadCSVCell "!CSV_PATH!" %%i !END_TIME_COLUMN_INDEX! END_TIME_VALUE
             call :ReadCSVCell "!CSV_PATH!" %%i !CAPFILE_ADD_COLUMN_INDEX! CAPFILE_ADD_VALUE
             rem 打印当前行的CAPFILE_ADD_COLUMN_INDEX列的内容
-            echo Content of CAPFILE_ADD_COLUMN_INDEX column in row %%i: !CAPFILE_ADD_VALUE!
+            @REM echo Content of CAPFILE_ADD_COLUMN_INDEX column in row %%i: !CAPFILE_ADD_VALUE!
             if %%i equ !TOTAL_LINES! echo This is the last row according to loop settings
             rem 检查CAPFILE_ADD_VALUE指向的目录是否存在
             if not exist "!CAPFILE_ADD_VALUE!" (
@@ -100,9 +100,9 @@ if defined CSV_PATH (
                 echo Error: LIB_ADD_VALUE in row %%i is not Valid!
                 exit /b 1
             )
+
             rem 仓库目录存在，开始抓取操作
             set "LOCAL_IP_PARTS=0"
-            
             rem 检查LOCAL_IP_VALUE是否为空
             if not "!LOCAL_IP_VALUE!"=="" (
                 rem 如果字符串不包含+分隔符，那么整个字符串就是一个部分
@@ -114,7 +114,6 @@ if defined CSV_PATH (
                     set "temp=!LOCAL_IP_VALUE!"
                     set /a LOCAL_IP_PARTS=0
                 
-                    rem 使用call命令创建一个子环境来处理分割，避免goto影响外部循环
                     call :split_local_ip "!temp!" LOCAL_IP_PARTS LOCAL_IP_PART_
                 )
             )
@@ -149,7 +148,6 @@ if defined CSV_PATH (
                 echo Error: LOCAL_IP_VALUE in row %%i is not Valid!
                 exit /b 1
             )
-            echo End of processing for row %%i
 
             rem 在LIB_ADD_VALUE目录下创建CAP文件处理之后的文件
             set "CAPED_FILE_DIR=!LIB_ADD_VALUE!\result_form_capFile"
@@ -203,6 +201,10 @@ if defined CSV_PATH (
             rem next step: use the python script to clean the data
             python "clean_data_operation.py" "!EXTRACTED_FEATURES_DIR!" "!CLEANED_DATA_DIR!" "!START_TIME_VALUE!" "!END_TIME_VALUE!" "!ID_VALUE!"
 
+            rem 输出2个空行，便于阅读
+            echo.
+            echo.
+            
         )
         
         if "!vision!"=="true" (
