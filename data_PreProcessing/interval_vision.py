@@ -14,9 +14,12 @@ def visual_UDP_features(output_path, featuresFile, timeListFile = ''):
     # 初步的可视化，校验文件是否正确
     # print(featuresFile)
     # print(timeListFile)
-    print(timeListFile)
+    # 首先过滤timeListFile当中的双引号
+    timeListFile = timeListFile.replace('"', '')
+    #然后取出timeListFile路径当中的文件名
+    timeListFile_name = timeListFile.split('\\')[-1]
     if not os.path.exists(timeListFile):
-        # print('hello')
+        print(f'visual data from featuresFile without timeListFile: {timeListFile_name}')
         # 开始读取featuresFile文件
         features_df = pd.read_csv(featuresFile)
         # 首先将features_df当中的curTime_of_UTC8转换为datatime对象
@@ -48,9 +51,9 @@ def visual_UDP_features(output_path, featuresFile, timeListFile = ''):
         # 构建存储卡顿时间区间的缓存
         timeIntervalList = []
         # 提取timeList表的文件名中的年月日，作为时间信息之一
-        parts = timeListFile.split("_")
-        date = parts[1]
-        # print(date)
+        parts = timeListFile_name.split("_")
+        date = parts[3][:8]
+        print(date)
         # 逐行读取timeListFile文件当中的信息
         with open(timeListFile, "r") as f:
             lines = f.readlines()
