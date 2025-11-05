@@ -1,0 +1,3 @@
+源标签文件: d:\XFC_files\code\UDP_QoE\data_label\gaming_sgood_sgood_2025102002_lag_timeList.txt
+卡顿次数: 0 次
+总卡顿时间: 0.000 秒 (0秒0毫秒)
