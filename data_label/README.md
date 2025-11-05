@@ -8,4 +8,4 @@ label格式：HH:MM:SS.xxx-HH:MM:SS.xxx按行区分区间
 | 采集环境 |寝室，良好通信|寝室，一条断网后采集、两条良好通信|教学楼，良好通信|光谷广场，走动下良好通信|地铁，非良好通信|地铁，非良好通信|断网，非良好通信|高铁，非良好通信|断网，非良好通信|
 | 内容说明 |一条gaming数据|一条gaming数据（断网后）、video、meeting|gaming、video、meeting各一条|gaming、video、meeting各一条|gaming、video、meeting各两条|gaming、video各两条、一条meeting|gaming、video、两条meeting|-|video、meeting、gaming各一条|
 
-备注：2025.10.25及以前采集到的数据全部为使用“移动”SIM卡设备采集到的数据。
+备注：2025.10.25及以前采集到的数据全部为使用“移动”SIM卡设备采集到的数据,之后包含有使用“广电”SIM卡设备采集到的数据。
