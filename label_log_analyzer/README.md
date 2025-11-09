@@ -20,7 +20,7 @@ matplotlib
 ## 效果概览：
 
 ### 卡顿次数
-![图片1描述](./label_log_analyzer/result_pic/lag_counts.png)
+![图片1描述](/label_log_analyzer/result_pic/lag_counts.png)
 
 ### 卡顿总时长
-![图片1描述](./label_log_analyzer/result_pic/lag_total_seconds.png)
+![图片1描述](/label_log_analyzer/result_pic/lag_total_seconds.png)
