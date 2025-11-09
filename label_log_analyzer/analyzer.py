@@ -138,11 +138,12 @@ def highlight_diff_cases(ax, sample_range, color, text = None):
 def pic_highlight_diff_cases(ax):
     highlight_diff_cases(ax, (0,0), 'green', '宿舍')
     highlight_diff_cases(ax, (1,1), 'red', '断网')
-    highlight_diff_cases(ax, (2,2), 'green', '教室')
-    highlight_diff_cases(ax, (3,5), 'blue', '商场')
-    highlight_diff_cases(ax, (6,11), 'orange', '地铁-移动SIM')
-    highlight_diff_cases(ax, (12,16), 'white', '地铁-广电SIM')
-    highlight_diff_cases(ax, (17,23), 'red', '断网-广电SIM')
+    highlight_diff_cases(ax, (2,3), 'green', '宿舍')
+    highlight_diff_cases(ax, (4,6), 'brown', '教室')
+    highlight_diff_cases(ax, (7,9), 'blue', '商场')
+    highlight_diff_cases(ax, (10,15), 'orange', '地铁-移动SIM')
+    highlight_diff_cases(ax, (16,20), 'white', '地铁-广电SIM')
+    highlight_diff_cases(ax, (21,30), 'red', '断网-广电SIM')
 
 def plot_bars(result_dir: str, titles: Tuple[str, str], x_labels: List[str], counts: List[int], totals: List[float]):
     """绘制两幅柱状图：卡顿次数与总卡顿时间"""
@@ -248,13 +249,11 @@ def main():
     totals: List[float] = []
 
     for file_path in txt_files:
-
-
         total_lag_seconds, lag_intervals = calculate_lag_time(file_path)
 
         # 保存单文件分析文本到 result/ 同名 txt
         out_txt = save_analysis_text(result_dir, file_path, total_lag_seconds, lag_intervals)
-        """
+        
         print(f"\n分析文件: {file_path}")
         print("-" * 40)
         
@@ -265,7 +264,7 @@ def main():
         print(f"卡顿次数: {len(lag_intervals)} 次")
         print(f"总卡顿时间: {total_lag_seconds:.3f} 秒 ({format_time(total_lag_seconds)})")
         print("-" * 40)
-        """
+        
         # 收集用于绘图的数据
         x_labels.append(os.path.splitext(os.path.basename(file_path))[0])
         counts.append(len(lag_intervals))
