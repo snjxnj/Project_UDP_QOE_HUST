@@ -5,11 +5,15 @@
 ### 目录结构结构：
 project/
 
-├── data_label/           # label.txt存放文件目录
+├── data_label/
 
-├── label_log_analyzer/   # label分析脚本所在目录
+│   ├── normal/           # 常规样本存放文件目录
 
-保证这两个文件夹同级即可
+│   ├── highway/          # 高铁特殊场景样本存放文件目录
+
+└── label_log_analyzer/   # label分析脚本所在目录
+
+保证data_label、label_log_analyzer这两个文件夹同级即可
 
 ### 库：
 matplotlib
