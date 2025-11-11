@@ -1,4 +1,4 @@
-源标签文件: d:\XFC_files\code\UDP_QoE\data_label\gaming_sbad_sgood_2025102801_lag_timeList.txt
+源标签文件: d:\XFC_files\code\UDP_QoE\data_label\normal\gaming_sbad_sgood_2025102801_lag_timeList.txt
 卡顿次数: 4 次
 总卡顿时间: 196.043 秒 (3分钟16秒43毫秒)
 

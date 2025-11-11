@@ -143,7 +143,10 @@ def pic_highlight_diff_cases(ax):
     highlight_diff_cases(ax, (7,9), 'blue', '商场')
     highlight_diff_cases(ax, (10,15), 'orange', '地铁-移动SIM')
     highlight_diff_cases(ax, (16,20), 'white', '地铁-广电SIM')
-    highlight_diff_cases(ax, (21,30), 'red', '断网-广电SIM')
+    highlight_diff_cases(ax, (21,31), 'red', '断网-广电SIM')
+
+    highlight_diff_cases(ax, (32,37), 'white', '高铁-广电SIM')
+    highlight_diff_cases(ax, (38,42), 'blue', '高铁-移动SIM')
 
 def plot_bars(result_dir: str, titles: Tuple[str, str], x_labels: List[str], counts: List[int], totals: List[float]):
     """绘制两幅柱状图：卡顿次数与总卡顿时间"""
@@ -194,16 +197,14 @@ def plot_bars(result_dir: str, titles: Tuple[str, str], x_labels: List[str], cou
     plt.close()
     return out1, out2
 
-def main():
-    search_dir = get_data_label_dir()
-
-    # 在\data_label目录查找所有以 _lag_timeList.txt 结尾的文件
-    file_pattern = os.path.join(search_dir, '**', '*_lag_timeList.txt')
-    print(file_pattern)
+def give_back_dir_sorted_files(dir_name):
+    # 在当前dir_name目录查找所有以 _lag_timeList.txt 结尾的文件
+    file_pattern = os.path.join(dir_name, '**', '*_lag_timeList.txt')
     txt_files = glob.glob(file_pattern, recursive=True)
-    if not os.path.isdir(search_dir):
-        print(f"未找到目录: {search_dir}")
-    else: print(f"搜索到目录: {search_dir}")
+
+    if not os.path.isdir(dir_name):
+        print(f"未找到目录: {dir_name}")
+    else: print(f"搜索到目录: {dir_name}")
 
     if not txt_files:
         print(f"未找到匹配 {file_pattern} 的文件")
@@ -237,6 +238,20 @@ def main():
 
     txt_files = sorted(txt_files, key=_sample_sort_key)
 
+    return txt_files
+
+def main():
+    search_dir = get_data_label_dir()
+
+    normal_dir = os.path.join(search_dir, 'normal')
+    highway_dir_class1 = os.path.join(search_dir, 'highway', 'guangdian')
+    highway_dir_class2 = os.path.join(search_dir, 'highway', 'yidong')
+    txt_files_normal = give_back_dir_sorted_files(normal_dir)
+    txt_files_highway_class1 = give_back_dir_sorted_files(highway_dir_class1)
+    txt_files_highway_class2 = give_back_dir_sorted_files(highway_dir_class2)
+    
+    txt_files = txt_files_normal + txt_files_highway_class1 + txt_files_highway_class2
+
     result_dir = ensure_result_dir()
     print(f"结果输出目录: {result_dir}")
 
@@ -248,22 +263,19 @@ def main():
     counts: List[int] = []
     totals: List[float] = []
 
+    print('每个样本文件对应的索引：')
+    print('-' * 70)
+    files_cnt = 0
+    for file_path in txt_files:
+        print(f'{files_cnt}: {os.path.basename(file_path)}')
+        files_cnt += 1
+    print('-' * 70)
+
     for file_path in txt_files:
         total_lag_seconds, lag_intervals = calculate_lag_time(file_path)
 
         # 保存单文件分析文本到 result/ 同名 txt
         out_txt = save_analysis_text(result_dir, file_path, total_lag_seconds, lag_intervals)
-        
-        print(f"\n分析文件: {file_path}")
-        print("-" * 40)
-        
-        print(f"分析结果已保存: {out_txt}")
-
-        # 控制台简单摘要
-        
-        print(f"卡顿次数: {len(lag_intervals)} 次")
-        print(f"总卡顿时间: {total_lag_seconds:.3f} 秒 ({format_time(total_lag_seconds)})")
-        print("-" * 40)
         
         # 收集用于绘图的数据
         x_labels.append(os.path.splitext(os.path.basename(file_path))[0])

@@ -1,4 +1,4 @@
-源标签文件: d:\XFC_files\code\UDP_QoE\data_label\meeting_dgood_sgood_2025102101_lag_timeList.txt
+源标签文件: d:\XFC_files\code\UDP_QoE\data_label\normal\meeting_dgood_sgood_2025102101_lag_timeList.txt
 卡顿次数: 6 次
 总卡顿时间: 5.784 秒 (5秒783毫秒)
 

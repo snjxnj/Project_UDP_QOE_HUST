@@ -1,4 +1,4 @@
-源标签文件: d:\XFC_files\code\UDP_QoE\data_label\video_sbad_sgood_2025110301_lag_timeList.txt
+源标签文件: d:\XFC_files\code\UDP_QoE\data_label\normal\video_sbad_sgood_2025110301_lag_timeList.txt
 卡顿次数: 9 次
 总卡顿时间: 70.812 秒 (1分钟10秒812毫秒)
 
