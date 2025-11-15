@@ -136,17 +136,15 @@ def highlight_diff_cases(ax, sample_range, color, text = None):
 - parm4：文字内容，例如 '宿舍'等备注信息
 """
 def pic_highlight_diff_cases(ax):
-    highlight_diff_cases(ax, (0,0), 'green', '宿舍')
-    highlight_diff_cases(ax, (1,1), 'red', '断网')
-    highlight_diff_cases(ax, (2,3), 'green', '宿舍')
-    highlight_diff_cases(ax, (4,6), 'brown', '教室')
-    highlight_diff_cases(ax, (7,9), 'blue', '商场')
-    highlight_diff_cases(ax, (10,15), 'orange', '地铁-移动SIM')
-    highlight_diff_cases(ax, (16,20), 'white', '地铁-广电SIM')
-    highlight_diff_cases(ax, (21,31), 'red', '断网-广电SIM')
+    highlight_diff_cases(ax, (0,2), 'green', '宿舍')
+    highlight_diff_cases(ax, (3,5), 'brown', '教室')
+    highlight_diff_cases(ax, (6,8), 'blue', '商场')
+    highlight_diff_cases(ax, (9,14), 'orange', '地铁-移动SIM')
+    highlight_diff_cases(ax, (15,19), 'white', '地铁-广电SIM')
+    highlight_diff_cases(ax, (21,32), 'red', '断网-广电SIM')
 
-    highlight_diff_cases(ax, (32,37), 'white', '高铁-广电SIM')
-    highlight_diff_cases(ax, (38,42), 'blue', '高铁-移动SIM')
+    highlight_diff_cases(ax, (33,42), 'white', '高铁-广电SIM')
+    highlight_diff_cases(ax, (43,51), 'blue', '高铁-移动SIM')
 
 def plot_bars(result_dir: str, titles: Tuple[str, str], x_labels: List[str], counts: List[int], totals: List[float]):
     """绘制两幅柱状图：卡顿次数与总卡顿时间"""
@@ -197,6 +195,8 @@ def plot_bars(result_dir: str, titles: Tuple[str, str], x_labels: List[str], cou
     plt.close()
     return out1, out2
 
+"""样本排序相关操作"""
+# 按默认时间戳初步排序
 def give_back_dir_sorted_files(dir_name):
     # 在当前dir_name目录查找所有以 _lag_timeList.txt 结尾的文件
     file_pattern = os.path.join(dir_name, '**', '*_lag_timeList.txt')
@@ -240,6 +240,34 @@ def give_back_dir_sorted_files(dir_name):
 
     return txt_files
 
+# 手动重排
+def sort_files_by_myself(txt_files: list[str], target_filename: str, position: int) -> list[str]:
+    """
+    手动重排：若 txt_files 中存在 basename == target_filename 的元素
+    则移除并插入到指定位置（0 为首）。越界位置自动截到 [0, len]
+    不存在时原样返回
+    """
+    if not isinstance(txt_files, list) or not target_filename:
+        return txt_files
+    # 归一化位置
+    if position < 0:
+        position = 0
+    if position > len(txt_files):
+        position = len(txt_files)
+    # 寻找目标（按文件名精确匹配）
+    match_index = None
+    for i, p in enumerate(txt_files):
+        if os.path.basename(p) == target_filename:
+            match_index = i
+            break
+    if match_index is None:
+        print(f"在手动重排范围中未找到目标文件{target_filename}")
+        return txt_files  # 不存在
+    # 取出并插入
+    path_obj = txt_files.pop(match_index)
+    txt_files.insert(position, path_obj)
+    return txt_files
+
 def main():
     search_dir = get_data_label_dir()
 
@@ -252,6 +280,8 @@ def main():
     
     txt_files = txt_files_normal + txt_files_highway_class1 + txt_files_highway_class2
 
+    txt_files = sort_files_by_myself(txt_files, "video_sbad_sgood_2025110214_lag_timeList.txt", 21)
+    txt_files = sort_files_by_myself(txt_files, "gaming_sbad_sgood_2025102001_lag_timeList.txt", 21)
     result_dir = ensure_result_dir()
     print(f"结果输出目录: {result_dir}")
 
@@ -271,14 +301,21 @@ def main():
         files_cnt += 1
     print('-' * 70)
 
-    for file_path in txt_files:
+    all_files_lag_seconds = 0.0
+
+    for idx, file_path in enumerate(txt_files):
         total_lag_seconds, lag_intervals = calculate_lag_time(file_path)
+        all_files_lag_seconds += total_lag_seconds
 
         # 保存单文件分析文本到 result/ 同名 txt
         out_txt = save_analysis_text(result_dir, file_path, total_lag_seconds, lag_intervals)
         
-        # 收集用于绘图的数据
-        x_labels.append(os.path.splitext(os.path.basename(file_path))[0])
+        # 样本名（去扩展名）
+        sample_name = os.path.splitext(os.path.basename(file_path))[0]
+        # 加序号前缀：序号-样本名
+        label_with_index = f"{idx}-{sample_name}"
+        x_labels.append(label_with_index)
+
         counts.append(len(lag_intervals))
         totals.append(total_lag_seconds)
 
@@ -291,7 +328,11 @@ def main():
         totals,
     )
     if out1 and out2:
-        print(f"柱状图已保存: {out1}\n{out2}")
+        print(f"柱状图已保存: \n{out1}\n{out2}")
 
+    print(f"共分析了{len(txt_files)}个样本文件，总卡顿时间: {all_files_lag_seconds:.3f} 秒 ({format_time(all_files_lag_seconds)})")
+    print(f"按每个样本30分钟估算，总卡顿时间占比: {all_files_lag_seconds / (len(txt_files) * 30 * 60) * 100:.4f}%")
+    print('-' * 70)
+    
 if __name__ == "__main__":
     main()
