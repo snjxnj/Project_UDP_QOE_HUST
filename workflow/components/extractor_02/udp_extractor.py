@@ -351,9 +351,10 @@ class udp_extractor(Extractor):
         return 0, result_df
 
     """
-    @brief extract方法的实现，执行UDP协议的特征提取操作
-    @param legal_dataFrame_st 目标DF表格，包含合法的样本记录和存储库信息
+    @brief  extract方法的实现，执行UDP协议的特征提取操作
+    @param  legal_dataFrame_st 目标DF表格，包含合法的样本记录和存储库信息
     @return 整形值，表示是否成功完成提取操作
+    @note   overview内容已经转移至overview_extractor中，旧有版本的extract方法实现暂时舍弃
     """
     # def extract(self, *args, **kwargs) -> any:
     #     # 1. 载入legal_dataFrame_st表格
@@ -487,19 +488,62 @@ class udp_extractor(Extractor):
                 )
             if len(localIP_path) == 0:
                 print(f"!!! {self.__name} - extractor Error: no IP files found in sample: {scene}-{id}!")
+                result -= 1
+                continue
             for path in localIP_path:
                 if not os.path.exists(path):
                     print(f"!!! {self.__name} - extractor Error: Cannot find file: {os.path.basename(path)} in sample: {scene}-{id}!")
+                    result -= 1
+                    continue
             # 完成所需文件的检查
             print(f"### {self.__name} - extractor Info: All files needed for udp extraction is already!")
 
             # 3. 获取需要观测的目标流通道
-            
+            # 读入overview_files文件
+            target_flow = []
+            try:
+                with open(overviewFile_path, "r") as f:
+                    # 创建负载缓存-字典列表
+                    flow_item_list = []
+                    # 逐行读取信息并进行负载统计
+                    lines = f.readlines()
+                    for line in lines:
+                        if "<->" in line:
+                            parts = line.strip().split()
+                            # 读入IP对
+                            local_ip = None
+                            serv_ip = None
+                            # 读入负载
+                            load = None
+                            # 读入起始截至时间
+                            start_time = None
+                            end_time = None
+                            # 建立字典
+                            flow_item = {
+                                "local_ip": local_ip,
+                                "serv_ip": serv_ip,
+                                "load": load,
+                                "start_time": start_time,
+                                "end_time": end_time
+                            }
+                            flow_item_list.append(flow_item)
+                    # 统计负载占比，获取目标流通道
+                    load_sum = sum([int(item["load"]) for item in flow_item_list])
+                    for item in flow_item_list:
+                        if (判定负载为目标的条件):
+                            target_flow.append(item)
+            except Exception as e:
+                print(f"!!! {self.__name} - extractor Error: While read overview file: {overviewFile_path}, error: {e}")
+                result -= 0
+                continue
+
+            # 4. 在merge_capfiles中对各个流通道进行统计
+
+            # 5. 根据指令信息决议是否绘制可视化结果
+
+            # 6. 根据指令信息决议是否导出数据矩阵
 
         return result
-            
-            
-        
 
     def toString(self) -> str:
         return self.__name
