@@ -22,6 +22,43 @@ def is_ipv4(addr: str) -> bool:
     except ValueError:
         return False
 
+def get_IPpair_from_line(line: str):
+    local_ip = None
+    serv_ip = None
+    if "<->" in line:
+        parts = line.strip().split()
+        ip_1, port_1 = parts[0].rsplit(":", 1)
+        ip_2, port_2 = parts[2].rsplit(":", 1)
+        if ((is_ipv4(ip_1) or is_ipv6(ip_1))
+            and (is_ipv4(ip_2) or is_ipv6(ip_2))):
+            local_ip = ip_1
+            serv_ip = ip_2
+
+    return local_ip, serv_ip
+
+def transfer_to_B(num: int, unit: str):
+    # 给出负载的单位转换-统一转换到字节单位
+    units = {
+        "B":    1,
+        "KB":   1024,
+        "kB":   1024,
+        "MB":   1024*1024,
+        "GB":   1024*1024*1024
+    }
+    return (num * units[unit]) if unit in units else -1
+
+def get_load_from_line(line: str):
+    down_load = -1
+    up_load = -1
+    total_load = -1
+    if "<->" in line:
+        parts = line.strip().split()
+        down_load = transfer_to_B(int(parts[4]), parts[5])
+        up_load = transfer_to_B(int(parts[7]), parts[8])
+        total_load = transfer_to_B(int(parts[10]),parts[11])
+    return down_load, up_load, total_load
+
+
 """
 @brief 类udp_extractor，继承自Extractor虚拟父类
 """
@@ -441,6 +478,7 @@ class udp_extractor(Extractor):
             id = row["ID"]
             scene = row["scene"]
             storage_Add = row["storage_Add"]
+
             # 2. 检查UDP特征提取所需的文件是否存在
             # 2.1 检查源文件merged_capfiles文件是否存在
             merCapFiles_dir = os.path.join(storage_Add, "merged_capFiles")
@@ -509,35 +547,50 @@ class udp_extractor(Extractor):
                     lines = f.readlines()
                     for line in lines:
                         if "<->" in line:
-                            parts = line.strip().split()
-                            # 读入IP对
-                            local_ip = None
-                            serv_ip = None
-                            # 读入负载
-                            load = None
-                            # 读入起始截至时间
-                            start_time = None
-                            end_time = None
+                            # 从行字串中获取相关信息
+                            local_ip, serv_ip = get_IPpair_from_line(line)
+                            down_load, up_load, total_load = get_load_from_line(line)
                             # 建立字典
                             flow_item = {
-                                "local_ip": local_ip,
-                                "serv_ip": serv_ip,
-                                "load": load,
-                                "start_time": start_time,
-                                "end_time": end_time
+                                "local_ip":     local_ip,
+                                "serv_ip":      serv_ip,
+                                "down_load":    down_load,
+                                "up_load":      up_load,
+                                "total_load":   total_load
                             }
                             flow_item_list.append(flow_item)
                     # 统计负载占比，获取目标流通道
-                    load_sum = sum([int(item["load"]) for item in flow_item_list])
+                    load_sum = sum([int(item["total_load"]) for item in flow_item_list])
+                    cache = 0
                     for item in flow_item_list:
-                        if (判定负载为目标的条件):
-                            target_flow.append(item)
+                        cache += item["total_load"]
+                        target_flow.append(item)
+                        if (cache/load_sum >= 0.99):
+                            break
             except Exception as e:
                 print(f"!!! {self.__name} - extractor Error: While read overview file: {overviewFile_path}, error: {e}")
                 result -= 0
                 continue
+            print(f"### {self.__name} - extractor Info: Find target Flow: {target_flow}.")
 
             # 4. 在merge_capfiles中对各个流通道进行统计
+            # 读入merge_capfile
+            merged_csv_df = pd.DataFrame()
+            try:
+                merged_csv_df = pd.read_csv(merCsvFiles_path)
+                if merged_csv_df.empty:
+                    print(f"!!! {self.__name} - extractor Error: Didnot find merged csvfiles or csvfiles is empty")
+                    result -= 1
+                    continue
+            except Exception as e:
+                print(f"!!! {self.__name} - extractor Error: In merged_capfiles Reading, there is errors: {e}")
+            # 对merge_capfiles进行udp过滤
+            udp_pattern = r'sll:ethertype:ip(v4|v6)?:udp:data'
+            udp_df = merged_csv_df[merged_csv_df['frame.protocols'].str.contains(udp_pattern, case=False, na=False, regex=True)]
+            # 对target_flow中的各个流进行统计
+            feature_dfs = []
+            for flow in target_flow:
+                
 
             # 5. 根据指令信息决议是否绘制可视化结果
 
