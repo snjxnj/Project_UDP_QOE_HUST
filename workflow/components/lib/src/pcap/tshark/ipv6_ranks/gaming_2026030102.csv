@@ -1,0 +1,3 @@
+rank,ip,count,rate,percent,burst_rate,burst_start
+1,ff02::2,1,,,,
+2,fe80::185c:74ff:fec0:1bdb,1,,,,

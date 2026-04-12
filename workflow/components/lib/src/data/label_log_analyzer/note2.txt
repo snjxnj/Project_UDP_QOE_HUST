@@ -1,0 +1,15 @@
+ID:202512230100110,  scene:video    ,note:断网
+ID:202512240100110,  scene:video    ,note:断网
+ID:202512260100110,  scene:video    ,note:断网
+ID:202512290100110,  scene:video    ,note:断网
+ID:202601120100110,  scene:gaming   ,note:断网
+ID:202601130100110,  scene:gaming   ,note:断网
+ID:202601140100110,  scene:gaming   ,note:断网
+ID:202601300100110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300200110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300300110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300400110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300500110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300600110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300700110,  scene:gaming   ,note:高铁-广电SIM
+ID:202601300800110,  scene:gaming   ,note:高铁-广电SIM

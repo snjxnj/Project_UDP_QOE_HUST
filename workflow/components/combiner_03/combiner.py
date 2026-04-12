@@ -3,7 +3,7 @@ import re
 import sys
 from abc import ABC, abstractmethod
 
-class combiner(ABC):
+class Combiner(ABC):
     # 构造函数
     def __init__(self):
         pass

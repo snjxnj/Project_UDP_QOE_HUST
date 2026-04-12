@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import json
 import pandas as pd
 import numpy as np
 import datetime as dt
@@ -60,6 +61,20 @@ def generate_storage(legal_dataFrame, output_dir="../../output"):
     legal_dataFrame_st = legal_dataFrame.copy()
     legal_dataFrame_st['storage_Add'] = storage_paths
     print("### genernate_storage Info: Successfully generated storage paths for all legal records and added them to the DataFrame.")
+
+    # 6. 将完备的legal_dataFrame_st表格以csv文件的形式，持久化输出到top_storage_dir目录中
+    legal_dataFrame_st_csv = os.path.join(top_storage_dir, "legal_dataFrame_st.csv")
+    legal_dataFrame_st.to_csv(legal_dataFrame_st_csv, index=False)
+
+    # 7. 将各个样本的条目信息输出到各样本仓储目录下
+    for index, row in legal_dataFrame_st.iterrows():
+        id = row["ID"]
+        scene = row["scene"]
+        storage_Add = row["storage_Add"]
+        # 将该样本的字典信息row，以json形式持久化存储在storage_Add目录下
+        json_path = os.path.join(storage_Add, f"message.json")
+        row.to_json(json_path, force_ascii = False, indent=4)
+
     return legal_dataFrame_st
 
 if __name__ == "__main__":

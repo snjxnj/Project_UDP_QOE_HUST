@@ -1,0 +1,6 @@
+源标签文件: D:\XFC_files\code\UDP2026\data_label\normal\video_sbad_sgood_2025122401_lag_timeList.txt
+卡顿次数: 1 次
+总卡顿时间: 4.784 秒 (4秒783毫秒)
+
+卡顿区间详情:
+   1. 00:23:19.989-00:23:24.773 -> 4.784秒

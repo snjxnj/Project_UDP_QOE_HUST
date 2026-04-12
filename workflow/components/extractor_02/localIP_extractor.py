@@ -288,7 +288,7 @@ class localIP_Extractor(Extractor):
                 else:
                     print(f"!!! {self.__name} - extractor Warning: {ip} is neither ipv4 or ipv6")
             # 锁定并创建目标输出目录的地址
-            localIP_output_dir = os.path.join(storage_Add, "localIP_extarctor")
+            localIP_output_dir = os.path.join(storage_Add, "localIP_extractor")
             try:
                 os.makedirs(localIP_output_dir)
                 print(f"### {self.__name} - extractor Info: Have Generated output directory in {localIP_output_dir}.")
