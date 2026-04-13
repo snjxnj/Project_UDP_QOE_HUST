@@ -1,0 +1,371 @@
+import os
+import re
+import glob
+from datetime import datetime
+from typing import List, Iterable, Tuple
+
+"""文件相关操作"""
+def get_data_label_dir():
+    """获取与当前脚本同级的 data_label 目录"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(script_dir)
+    return os.path.join(root_dir, "data_label")
+
+def ensure_result_dir() -> str:
+    """返回脚本同级 result 目录路径，如不存在则创建"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    result_dir = os.path.join(script_dir, 'result')
+    os.makedirs(result_dir, exist_ok=True)
+    return result_dir
+
+def ensure_result_pic_dir() -> str:
+    """返回脚本同级 result_pic 可视化文件目录路径，如不存在则创建"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    result_dir = os.path.join(script_dir, 'result_pic')
+    os.makedirs(result_dir, exist_ok=True)
+    return result_dir
+
+def ensure_filter_result_dir() -> str:
+    """返回脚本同级 filter_result 按时间过滤后的文件目录路径，如不存在则创建"""
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    result_dir = os.path.join(script_dir, 'filter_result')
+    os.makedirs(result_dir, exist_ok=True)
+    return result_dir
+
+def save_analysis_text(result_dir: str, label_file: str, total_lag_seconds: float, lag_intervals: List[Tuple[str, float]]):
+    """将单个 label 的分析结果保存为同名 txt 到 result 目录"""
+    base_name = os.path.basename(label_file)  # 保持同名对应
+    out_path = os.path.join(result_dir, base_name)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        f.write(f"源标签文件: {label_file}\n")
+        f.write(f"卡顿次数: {len(lag_intervals)} 次\n")
+        f.write(f"总卡顿时间: {total_lag_seconds:.3f} 秒 ({format_time(total_lag_seconds)})\n")
+        if lag_intervals:
+            f.write("\n卡顿区间详情:\n")
+            for i, (interval, duration) in enumerate(lag_intervals, 1):
+                f.write(f"  {i:2d}. {interval} -> {duration:.3f}秒\n")
+    return out_path
+
+def label_filter_by_lag_time(result_dir: str, label_file: str, filter_time_limit: float, lag_intervals: List[Tuple[str, float]]):
+    """根据卡顿时间区间过滤标签文件，保存到 filter_result 目录"""
+    base_name = os.path.basename(label_file)  # 保持同名对应
+    out_path = os.path.join(result_dir, base_name)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        for (interval, duration) in lag_intervals:
+            if duration >= filter_time_limit:
+                f.write(f"{interval}\n")
+
+"""时间戳处理相关操作"""
+def time_to_seconds(time_str):
+    """将时间字符串转换为秒数"""
+    # 兼容 00:00:00.000 或 00:00:00 格式
+    time_parts = time_str.split(':')
+    hours = int(time_parts[0])
+    minutes = int(time_parts[1])
+    seconds_millis = time_parts[2].split('.')
+    seconds = int(seconds_millis[0])
+    milliseconds = int(seconds_millis[1]) if len(seconds_millis) > 1 else 0
+    
+    total_seconds = hours * 3600 + minutes * 60 + seconds + milliseconds / 1000.0
+    return total_seconds
+
+def calculate_lag_time(file_path):
+    """计算单个文件的卡顿总时间"""
+    total_lag_seconds = 0.0
+    lag_intervals = []
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            for line in file:
+                line = line.strip()
+                if not line or '-' not in line:
+                    continue
+                
+                # 分割开始和结束时间
+                start_time, end_time = line.split('-')
+                start_seconds = time_to_seconds(start_time.strip())
+                end_seconds = time_to_seconds(end_time.strip())
+                # 如果结束时间小于开始时间，视为跨午夜，尾部加 24h
+                if end_seconds < start_seconds:
+                    end_seconds += 24 * 3600
+                lag_duration = max(0.0, end_seconds - start_seconds)
+                total_lag_seconds += lag_duration
+                lag_intervals.append((line, lag_duration))
+                
+    except Exception as e:
+        print(f"读取文件 {file_path} 时出错: {e}")
+        return 0.0, []
+    
+    return total_lag_seconds, lag_intervals
+
+def format_time(seconds):
+    """格式化时间为易读格式"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = seconds % 60
+    milliseconds = int((secs - int(secs)) * 1000)
+    
+    if hours > 0:
+        return f"{hours}小时{minutes}分钟{int(secs)}秒{milliseconds}毫秒"
+    elif minutes > 0:
+        return f"{minutes}分钟{int(secs)}秒{milliseconds}毫秒"
+    else:
+        return f"{int(secs)}秒{milliseconds}毫秒"
+
+"""可视化相关操作"""
+"""
+在柱状图上按样本区间填充背景色
+
+参数:
+- ax: Axes 对象
+- sample_range: 样本区间，例如 (0, 4) 表示从第1个到第5个等5个样本，是一个闭区间
+- color: 背景色，例如 "green"
+"""
+def highlight_diff_cases(ax, sample_range, color, text = None):
+    start, end = sample_range
+    # 注意：柱状图的横坐标从0开始，每个柱子宽度为1，所以需要调整边界
+    ax.axvspan(start - 0.5, end + 0.5, facecolor=color, alpha=0.3)
+    text_y_position=0.95
+
+    # 如果有文字内容，在背景区域上方居中显示
+    if text:
+        # 计算背景区域的中心位置
+        x_center = (start + end) / 2
+        
+        # 获取y轴范围，用于计算文字位置
+        ymin, ymax = ax.get_ylim()
+        text_y = ymin + (ymax - ymin) * text_y_position
+        
+        # 添加文字
+        ax.text(x_center, text_y, text, 
+                ha='center', va='center',
+                fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor='white', alpha=0.8))
+
+"""
+整图分区间处理背景
+在这里，你只需要复制highlight_diff_cases(ax, (0,0), 'green', '宿舍')
+参数：
+- ax: Axes 对象 不用管
+- parm2：（,)给一个区间，例如 (0, 4) 表示从第1个到第5个等5个样本，是一个双闭区间
+- parm3：颜色字符串，例如 'green'
+- parm4：文字内容，例如 '宿舍'等备注信息
+"""
+def pic_highlight_diff_cases(ax):
+    highlight_diff_cases(ax, (0,2), 'green', '宿舍')
+    highlight_diff_cases(ax, (3,5), 'brown', '教室')
+    highlight_diff_cases(ax, (6,8), 'blue', '商场')
+    highlight_diff_cases(ax, (9,14), 'orange', '地铁-移动SIM')
+    highlight_diff_cases(ax, (15,19), 'white', '地铁-广电SIM')
+    highlight_diff_cases(ax, (21,32), 'red', '断网-广电SIM')
+
+    highlight_diff_cases(ax, (33,42), 'white', '高铁-广电SIM')
+    highlight_diff_cases(ax, (43,51), 'blue', '高铁-移动SIM')
+
+def plot_bars(result_dir: str, titles: Tuple[str, str], x_labels: List[str], counts: List[int], totals: List[float]):
+    """绘制两幅柱状图：卡顿次数与总卡顿时间"""
+    # 延迟导入 matplotlib，并使用无头后端；若缺失则跳过绘图
+    try:
+        import matplotlib  # type: ignore
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt  # type: ignore
+    except Exception as e:
+        print(f"警告：matplotlib 不可用，跳过绘图。原因：{e}")
+        return None, None
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    # 图1：卡顿次数
+    plt.figure(figsize=(max(8, len(x_labels) * 0.6), 5))
+    bars = plt.bar(range(len(x_labels)), counts, color='#5B8FF9')
+
+    ax1 = plt.gca()
+    # pic_highlight_diff_cases(ax1)
+
+    plt.title(titles[0])
+    plt.xlabel('样本')
+    plt.ylabel('卡顿次数 (次)')
+    plt.xticks(range(len(x_labels)), x_labels, rotation=45, ha='right')
+    # 在柱顶显示数值
+    for b, v in zip(bars, counts):
+        plt.text(b.get_x() + b.get_width() / 2, b.get_height(), f"{v}", ha='center', va='bottom', fontsize=9)
+    plt.tight_layout()
+    out1 = os.path.join(result_dir, 'lag_counts.png')
+    plt.savefig(out1, dpi=150)
+    plt.close()
+
+    # 图2：总卡顿时间（秒）
+    plt.figure(figsize=(max(8, len(x_labels) * 0.6), 5))
+    bars = plt.bar(range(len(x_labels)), totals, color='#61DDAA')
+
+    ax2 = plt.gca()
+    # pic_highlight_diff_cases(ax2)
+
+    plt.title(titles[1])
+    plt.xlabel('样本')
+    plt.ylabel('总卡顿时间 (秒)')
+    plt.xticks(range(len(x_labels)), x_labels, rotation=45, ha='right')
+    for b, v in zip(bars, totals):
+        plt.text(b.get_x() + b.get_width() / 2, b.get_height(), f"{v:.1f}", ha='center', va='bottom', fontsize=9)
+    plt.tight_layout()
+    out2 = os.path.join(result_dir, 'lag_total_seconds.png')
+    plt.savefig(out2, dpi=150)
+    plt.close()
+    return out1, out2
+
+"""样本排序相关操作"""
+# 按默认时间戳初步排序
+def give_back_dir_sorted_files(dir_name):
+    # 在当前dir_name目录查找所有以 _lag_timeList.txt 结尾的文件
+    file_pattern = os.path.join(dir_name, '**', '*_lag_timeList.txt')
+    txt_files = glob.glob(file_pattern, recursive=True)
+
+    if not os.path.isdir(dir_name):
+        print(f"未找到目录: {dir_name}")
+    else: print(f"搜索到目录: {dir_name}")
+
+    if not txt_files:
+        print(f"未找到匹配 {file_pattern} 的文件")
+        return
+    
+    # 按样本名中的数字字符串排序（例如 2025102101 -> 2025-10-21 第 01 个样本）
+    def _sample_sort_key(path: str):
+        name = os.path.splitext(os.path.basename(path))[0]
+        # 优先匹配 10 位（YYYYMMDDNN）
+        m10 = re.findall(r"(\d{10})", name)
+        if m10:
+            s = m10[-1]  # 取最后一个匹配，防止前缀数字干扰
+            date_str, idx_str = s[:8], s[8:]
+            try:
+                dt = datetime.strptime(date_str, "%Y%m%d")
+                idx = int(idx_str)
+                return (dt, idx, name)
+            except Exception:
+                pass
+        # 次选：匹配 8 位日期 + 任意非数字 + 两位序号
+        m = re.search(r"(\d{8}).*?(\d{2})", name)
+        if m:
+            try:
+                dt = datetime.strptime(m.group(1), "%Y%m%d")
+                idx = int(m.group(2))
+                return (dt, idx, name)
+            except Exception:
+                pass
+        # 兜底：使用极小时间 + 名称，保持稳定性
+        return (datetime.min, 0, name)
+
+    txt_files = sorted(txt_files, key=_sample_sort_key)
+
+    return txt_files
+
+# 手动重排
+def sort_files_by_myself(txt_files: list[str], target_filename: str, position: int) -> list[str]:
+    """
+    手动重排：若 txt_files 中存在 basename == target_filename 的元素
+    则移除并插入到指定位置（0 为首）。越界位置自动截到 [0, len]
+    不存在时原样返回
+    """
+    if not isinstance(txt_files, list) or not target_filename:
+        return txt_files
+    # 归一化位置
+    if position < 0:
+        position = 0
+    if position > len(txt_files):
+        position = len(txt_files)
+    # 寻找目标（按文件名精确匹配）
+    match_index = None
+    for i, p in enumerate(txt_files):
+        if os.path.basename(p) == target_filename:
+            match_index = i
+            break
+    if match_index is None:
+        print(f"在手动重排范围中未找到目标文件{target_filename}")
+        return txt_files  # 不存在
+    # 取出并插入
+    path_obj = txt_files.pop(match_index)
+    txt_files.insert(position, path_obj)
+    return txt_files
+
+def main():
+    # search_dir = get_data_label_dir()
+    search_dir = r'D:\XFC_files\code\UDP_QoE\data_label'
+
+    video_dir = os.path.join(search_dir, 'video')
+
+    normal_dir = os.path.join(search_dir, 'normal')
+    highway_dir_class1 = os.path.join(search_dir, 'highway', 'guangdian')
+    highway_dir_class2 = os.path.join(search_dir, 'highway', 'yidong')
+    txt_files_normal = give_back_dir_sorted_files(normal_dir)
+    txt_files_highway_class1 = give_back_dir_sorted_files(highway_dir_class1)
+    txt_files_highway_class2 = give_back_dir_sorted_files(highway_dir_class2)
+
+    txt_files_video = give_back_dir_sorted_files(video_dir)
+
+    txt_files = txt_files_video
+    
+    # txt_files = txt_files_normal + txt_files_highway_class1 + txt_files_highway_class2
+    """
+    txt_files = sort_files_by_myself(txt_files, "video_sbad_sgood_2025110214_lag_timeList.txt", 21)
+    txt_files = sort_files_by_myself(txt_files, "gaming_sbad_sgood_2025102001_lag_timeList.txt", 21)
+
+    """
+    result_dir = ensure_result_dir()
+    print(f"结果输出目录: {result_dir}")
+    
+    visual_dir = ensure_result_pic_dir()
+    print(f"可视化图片输出目录: {visual_dir}")
+
+    filter_dir = ensure_filter_result_dir()
+    print(f"按卡顿区间时间过滤后结果输出目录: {filter_dir}")
+
+    # 汇总数据用于可视化
+    x_labels: List[str] = []
+    counts: List[int] = []
+    totals: List[float] = []
+
+    print('每个样本文件对应的索引：')
+    print('-' * 70)
+    files_cnt = 0
+    for file_path in txt_files:
+        print(f'{files_cnt}: {os.path.basename(file_path)}')
+        files_cnt += 1
+    print('-' * 70)
+
+    all_files_lag_seconds = 0.0
+
+    for idx, file_path in enumerate(txt_files):
+        total_lag_seconds, lag_intervals = calculate_lag_time(file_path)
+        all_files_lag_seconds += total_lag_seconds
+
+        # 保存单文件分析文本到 result/ 同名 txt
+        out_txt = save_analysis_text(result_dir, file_path, total_lag_seconds, lag_intervals)
+        
+        label_filter_by_lag_time(filter_dir, file_path, 2, lag_intervals)
+        # 样本名（去扩展名、_lag_timeList固定格式）
+        sample_name = os.path.splitext(os.path.basename(file_path))[0]
+        if sample_name.endswith('_lag_timeList'):
+            sample_name = sample_name[:-len('_lag_timeList')]
+
+        # 加序号前缀：序号-样本名
+        label_with_index = f"{idx}-{sample_name}"
+        x_labels.append(label_with_index)
+
+        counts.append(len(lag_intervals))
+        totals.append(total_lag_seconds)
+
+    # 生成两幅柱状图
+    out1, out2 = plot_bars(
+        visual_dir,
+        ("各样本卡顿次数", "各样本总卡顿时间(秒)"),
+        x_labels,
+        counts,
+        totals,
+    )
+    if out1 and out2:
+        print(f"柱状图已保存: \n{out1}\n{out2}")
+
+    print(f"共分析了{len(txt_files)}个样本文件，总卡顿时间: {all_files_lag_seconds:.3f} 秒 ({format_time(all_files_lag_seconds)})")
+    print(f"按每个样本30分钟估算，总卡顿时间占比: {all_files_lag_seconds / (len(txt_files) * 30 * 60) * 100:.4f}%")
+    print('-' * 70)
+
+# 先按“note”标志分组 然后组内按时间排序
+if __name__ == "__main__":
+    main()

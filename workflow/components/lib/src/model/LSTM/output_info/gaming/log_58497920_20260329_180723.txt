@@ -1,0 +1,40 @@
+日志保存到: D:\XFC_files\code\UDP2026\src\model\LSTM\output_info\log_58497920_20260329_180723.txt
+使用设备：CUDA
+使用超参 | epochs=50, bs=32, lr=0.001, dropout=0.2, sq_len=20, patience=15, prob_threshold=0.5
+使用种子：58497920
+使用测试集：['gaming_2025102601_combinedUDPModem.csv', 'gaming_2025110210_combinedUDPModem.csv', 'gaming_2025102101_combinedUDPModem.csv']
+使用的特征列: ['num_send_packets', 'avg_send_packetLen', 'send_dataStream', 'avg_send_packetInterval', 'num_recv_packets', 'avg_recv_packetLen', 'recv_dataStream', 'avg_recv_packetInterval', 'mn_u_r_mean', 'mn_d_r_mean', 'mn_u_m_mean', 'mn_d_m_mean', 'mn_d_g_mean', 'mn_u_g_mean', 'mn_u_b_mean', 'mn_d_b_mean', 'mn_cqi_mean', 'mn_mac_mean', 'mn_bandwidth_mean', 'rsrp_1_mean', 'snr_1_mean']
+特征列数量: 21
+总训练集样本数: 20108, 标签数: (20108,)
+总测试集样本数: 1875, 标签数: (1875,)
+单个序列形状: (18, 21)
+Epoch 1/50 - train_loss: 0.8541, train_acc: 0.8661 - val_loss: 0.5294, val_acc: 0.9125
+Epoch 2/50 - train_loss: 0.6098, train_acc: 0.9080 - val_loss: 0.4713, val_acc: 0.9755
+Epoch 3/50 - train_loss: 0.5047, train_acc: 0.9219 - val_loss: 0.4555, val_acc: 0.9531
+Epoch 4/50 - train_loss: 0.4469, train_acc: 0.9285 - val_loss: 0.3928, val_acc: 0.9787
+Epoch 5/50 - train_loss: 0.3819, train_acc: 0.9387 - val_loss: 0.4727, val_acc: 0.9573
+Epoch 6/50 - train_loss: 0.3503, train_acc: 0.9327 - val_loss: 0.5422, val_acc: 0.9157
+Epoch 7/50 - train_loss: 0.3152, train_acc: 0.9358 - val_loss: 0.3859, val_acc: 0.9488
+Epoch 8/50 - train_loss: 0.2633, train_acc: 0.9489 - val_loss: 0.4798, val_acc: 0.8971
+Epoch 9/50 - train_loss: 0.2478, train_acc: 0.9440 - val_loss: 0.5354, val_acc: 0.9008
+Epoch 10/50 - train_loss: 0.2624, train_acc: 0.9431 - val_loss: 0.5638, val_acc: 0.8704
+Epoch 11/50 - train_loss: 0.2216, train_acc: 0.9449 - val_loss: 0.8170, val_acc: 0.9317
+Epoch 12/50 - train_loss: 0.2067, train_acc: 0.9480 - val_loss: 0.7340, val_acc: 0.9424
+Epoch 13/50 - train_loss: 0.1616, train_acc: 0.9609 - val_loss: 1.3086, val_acc: 0.9403
+Epoch 14/50 - train_loss: 0.1809, train_acc: 0.9585 - val_loss: 0.7949, val_acc: 0.9168
+Epoch 15/50 - train_loss: 0.1482, train_acc: 0.9630 - val_loss: 1.2367, val_acc: 0.9109
+Epoch 16/50 - train_loss: 0.1201, train_acc: 0.9697 - val_loss: 1.3279, val_acc: 0.9291
+Epoch 17/50 - train_loss: 0.1456, train_acc: 0.9616 - val_loss: 0.7687, val_acc: 0.9077
+Epoch 18/50 - train_loss: 0.1460, train_acc: 0.9613 - val_loss: 1.1118, val_acc: 0.9429
+Epoch 19/50 - train_loss: 0.1397, train_acc: 0.9648 - val_loss: 1.0104, val_acc: 0.9595
+Epoch 20/50 - train_loss: 0.1313, train_acc: 0.9709 - val_loss: 1.0175, val_acc: 0.9147
+Epoch 21/50 - train_loss: 0.1383, train_acc: 0.9692 - val_loss: 0.7675, val_acc: 0.9301
+Epoch 22/50 - train_loss: 0.1196, train_acc: 0.9750 - val_loss: 1.0206, val_acc: 0.9467
+验证集 15 轮未提升，提前停止训练。
+恢复到验证集最优参数（epoch=7，val_loss=0.3859）
+混淆矩阵：（used seed：58497920）
+[[1712   93]
+ [   7   63]]
+非卡顿判别: 1712/(1712+93) = 0.9485
+卡顿判别: 63/(63+7) = 0.9000
+混淆矩阵和loss曲线图已保存到: D:\XFC_files\code\UDP2026\src\model\LSTM\output_info\cm_and_loss_58497920_20260329_180723.png

@@ -1,0 +1,3 @@
+rank,ip,count,rate,percent,burst_rate,burst_start
+1,fe80::34a7:28e8:39e7:492d,2,1.6367,100.00%,0.0200,1563.679
+2,fe80::14ec:bff:fe9b:dbfc,2,1.6367,100.00%,0.0200,1563.679

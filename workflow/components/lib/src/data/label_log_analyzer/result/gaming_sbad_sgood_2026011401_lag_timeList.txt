@@ -1,0 +1,6 @@
+源标签文件: D:\XFC_files\code\UDP2026\data_label\normal\gaming_sbad_sgood_2026011401_lag_timeList.txt
+卡顿次数: 1 次
+总卡顿时间: 1.002 秒 (1秒2毫秒)
+
+卡顿区间详情:
+   1. 00:01:14.371-00:01:15.373 -> 1.002秒
