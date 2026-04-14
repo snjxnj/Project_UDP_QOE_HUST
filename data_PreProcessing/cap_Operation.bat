@@ -470,8 +470,8 @@ rem ****************************************************************************
         @REM echo Command mode: IPv6
         rem TODO: 开始IPv6版本的Tshark指令操作
         if "!ip_Format_Local!"=="ipv6" if "!ip_Format_Serv!"=="ipv6" (
-            tshark -r "!cap_file!" -Y "udp and (ipv6.src == !local_ip!) and (ipv6.dst == !serv_ip!)" -T fields -E header=y -E separator=, -E quote=d -e frame.time_epoch -e ip6.src -e ip6.dst -e frame.protocols -e frame.len -e _ws.col.Info > "!output_dir!\!cap_filename!_IPv6_send_!num!.csv"
-            tshark -r "!cap_file!" -Y "udp and (ipv6.src == !serv_ip!) and (ipv6.dst == !local_ip!)" -T fields -E header=y -E separator=, -E quote=d -e frame.time_epoch -e ip6.src -e ip6.dst -e frame.protocols -e frame.len -e _ws.col.Info > "!output_dir!\!cap_filename!_IPv6_recv_!num!.csv"
+            tshark -r "!cap_file!" -Y "udp and (ipv6.src == !local_ip!) and (ipv6.dst == !serv_ip!)" -T fields -E header=y -E separator=, -E quote=d -e frame.time_epoch -e ipv6.src -e ipv6.dst -e frame.protocols -e frame.len -e _ws.col.Info > "!output_dir!\!cap_filename!_IPv6_send_!num!.csv"
+            tshark -r "!cap_file!" -Y "udp and (ipv6.src == !serv_ip!) and (ipv6.dst == !local_ip!)" -T fields -E header=y -E separator=, -E quote=d -e frame.time_epoch -e ipv6.src -e ipv6.dst -e frame.protocols -e frame.len -e _ws.col.Info > "!output_dir!\!cap_filename!_IPv6_recv_!num!.csv"
         ) else if "!ip_Format_Local!"=="ipv6" if "!ip_Format_Serv!"=="any" (
             tshark -r "!cap_file!" -Y "udp and (ipv6.src == !local_ip!)" -T fields -E header=y -E separator=, -E quote=d -e frame.time_epoch -e ipv6.src -e ipv6.dst -e frame.protocols -e frame.len -e _ws.col.Info > "!output_dir!\!cap_filename!_IPv6_send_!num!.csv"
             tshark -r "!cap_file!" -Y "udp and (ipv6.dst == !local_ip!)" -T fields -E header=y -E separator=, -E quote=d -e frame.time_epoch -e ipv6.src -e ipv6.dst -e frame.protocols -e frame.len -e _ws.col.Info > "!output_dir!\!cap_filename!_IPv6_recv_!num!.csv"
