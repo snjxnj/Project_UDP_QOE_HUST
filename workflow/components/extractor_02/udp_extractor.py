@@ -629,6 +629,8 @@ class udp_extractor(Extractor):
                                     & (udp_df["ipv6.dst"]==flow["local_ip"]))].copy()
                 if up_df.empty or down_df.empty:
                     print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output from udp_df is empty")
+                    flow["up_df"] = up_df
+                    flow["down_df"] = down_df
                     result -= 1
                     continue
                 print(f"### {self.__name} - extractor Info: Got flow:{flow["local_ip"]}-{flow["serv_ip"]} from udp_df, up-size:{up_df.size}, down-size:{down_df.size}")
@@ -677,6 +679,7 @@ class udp_extractor(Extractor):
                 down_df = flow["down_df"]
                 if up_df.empty or down_df.empty:
                     print(f"### {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output from udp_df is empty")
+                    flow["udp_features"] = pd.DataFrame()
                     result -= 1
                     continue
                 print(f"### {self.__name} - extractor Info: Got flow:{flow["local_ip"]}-{flow["serv_ip"]} from udp_df, up-length:{len(up_df)}, down-length:{len(down_df)}")
@@ -810,7 +813,7 @@ class udp_extractor(Extractor):
                         "down_mutation_numPackets": down_mutation_numPackets,
                     
                         "up_mean_lenPackets": up_mean_lenPackets,
-                        "up_datastream_lenPakets": up_dataStream_lenPackets,
+                        "up_datastream_lenPackets": up_dataStream_lenPackets,
                         "down_mean_lenPackets": down_mean_lenPackets,
                         "down_datastream_lenPackets": down_dataStream_lenPackets,
 
