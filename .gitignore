@@ -1,0 +1,9 @@
+# Python 基本
+__pycache__/
+
+# 虚拟环境
+.venv/
+venv/
+
+# IDE
+.vscode/
