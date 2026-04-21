@@ -13,6 +13,10 @@
 │   │   └── pcap_info	 	# UDP数据集
 │   └── data_label   	 # 标签文件
 ├── src					 # 本分支提供的代码
+│   ├── data_loader      # 为所有模型提供数据集装载
+│   ├── model     		 # 存放模型代码
+│   │   └── LSTM_2026.py # LSTM现使用版本的回忆版，仅作接口使用示范
+│   └── data_preprocess  # 数据预处理：划分验证集和测试集
 ├── 其他README文件
 └── .gitignore
 </pre>
