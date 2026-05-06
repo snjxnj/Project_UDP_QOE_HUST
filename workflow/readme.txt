@@ -61,8 +61,11 @@ workflow
 1. 主流程的指令格式
 	使用指令：
 	cd components
-	python main.py [command ... ...] <targetList.txt path>
-	示例：python main.py -o -l -u -se ./targetList.txt
+	# python main.py [command ... ...] <targetList.txt path>	旧有版本
+	python data_preProcess.py [command ... ...] <targetList.txt path>
+	示例：
+	# python main.py -o -l -u -se ./targetList.txt
+	python data_preProcess.py -o -l -u -se -v ./targetList.txt
 
 2. 指令
 提取器指令：
