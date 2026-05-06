@@ -55,7 +55,7 @@ def aggregate_cap_files(src_dir):
         return pd.Series(dtype=str)
 
     # 2. 目标cap文件的正则匹配.cap*,.pcap*等格式的文件
-    pcap_pattern = re.compile(r'.*\.(cap|pcap|pcapng)(\d)?$', re.IGNORECASE)
+    pcap_pattern = re.compile(r'.*\.(cap|pcap|pcapng)(\d*)$', re.IGNORECASE)
     cap_file_paths = []
     for root, dirs, files in os.walk(src_dir):
         for file in files:
