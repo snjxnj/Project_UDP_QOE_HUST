@@ -28,7 +28,7 @@ def merge_capFiles(legal_dataFrame_st):
         id = row['ID']
         storage_Add = row['storage_Add']
         # 5. 在src_Add目录下搜索cap文件，目标文件的正则匹配格式为*.pcap*等
-        pcap_pattern = re.compile(r'.*\.(cap|pcap|pcapng)(\d)?$', re.IGNORECASE)
+        pcap_pattern = re.compile(r'.*\.(cap|pcap|pcapng)(\d*)$', re.IGNORECASE)
         cap_files = []
         for root, dirs, files in os.walk(src_Add):
             # 遍历files列表，找到符合条件的cap文件

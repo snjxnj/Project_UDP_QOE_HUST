@@ -4,6 +4,7 @@ import re
 import json
 import pandas as pd
 from datetime import datetime as dt
+from datetime import timedelta
 import matplotlib as mp
 import matplotlib.pyplot as plt
 import matplotlib.figure as Figure
@@ -78,10 +79,10 @@ class udp_visualizer:
         
         # 完成其他参数初始化，使能绘制器的状态
         self.__state = "Ready"
-    
+
 
     """
-    @brief get_graphs_allflow_with_lag方法，绘制所有流的曲线图，并携带卡顿区间信息
+    @brief get_graphs_allflow_with_lag方法，绘制**所有流**的曲线图，并携带卡顿区间信息
     @param flows_map 流信息，字典数据结构，键值对：流标号，特征文件地址
     @param lag_path 卡顿区间列表的地址
     """
@@ -89,8 +90,8 @@ class udp_visualizer:
         flowsDF_map = {}            # 存储UDP特征矩阵
         features = []               # 存储待绘制的特征名称
         features_merged_map = {}    # 存储已经完成数据矩阵合并后的map结构
-        startTime_alludp = None     # 存储UDP特征下的开始时间，dt对象
-        endTime_alludp = None       # 存储UDP特征下的截至时间，dt对象
+        startTime_alludp_dt = None     # 存储UDP特征下的开始时间，dt对象
+        endTime_alludp_dt = None       # 存储UDP特征下的截至时间，dt对象
         lagtime_df = None           # 存储卡顿区间列表中读取的卡顿区间信息，DF对象
         graph_map = {}              # 存储绘制后的图片，键值对：特征名称，图片对象
 
@@ -120,9 +121,9 @@ class udp_visualizer:
         print(f"### {self.__name} get_graphs_allflow_with_lag Info: {len(features)} features is already for visualization.They are: {features}")
         # 1.3 统计所有特征矩阵中的最大时间边界
         # UDP特征的最大时间边界即flow0总流的时间边界
-        startTime_alludp = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[0], 
+        startTime_alludp_dt = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[0], 
                                     "%Y-%m-%d %H:%M:%S")
-        endTime_alludp = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[-1], 
+        endTime_alludp_dt = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[-1], 
                                     "%Y-%m-%d %H:%M:%S")
 
         # 2. 读入卡顿列表，获取卡顿区间的日期、最大时间边界
@@ -133,16 +134,16 @@ class udp_visualizer:
         else:
             print(f"### {self.__name} get_graphs_allflow_with_lag Info: There is {len(lagtime_df)} lags in file:{self.__lag_path}.")
         # 2.2 读取第一行的lag_startTime和最后一行的lag_endTime作为卡顿区间的前后截至区间
-        startTime_alllag = lagtime_df["lag_startTime"].iloc[0]
-        endTime_alllag = lagtime_df["lag_endTime"].iloc[-1]
+        startTime_alllag_dt = dt.strptime(lagtime_df["lag_startTime"].iloc[0], "%Y-%m-%d %H:%M:%S")
+        endTime_alllag_dt = dt.strptime(lagtime_df["lag_endTime"].iloc[-1], "%Y-%m-%d %H:%M:%S")
         
         # 3. 匹配二者是否彼此吻合-是否同处于相同日期，且卡顿的前后边界是否处于特征文件边界以内
-        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-UDPs startTime: {startTime_alludp:%Y-%m-%d %H:%M:%S.%f}")
-        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-UDPs endTime: {endTime_alludp:%Y-%m-%d %H:%M:%S.%f}")
-        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-lags startTime: {startTime_alllag:%Y-%m-%d %H:%M:%S.%f}")
-        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-lags endTime: {endTime_alllag:%Y-%m-%d %H:%M:%S.%f}")
-        if (startTime_alludp <= startTime_alllag
-            and endTime_alludp >= endTime_alllag
+        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-UDPs startTime: {startTime_alludp_dt:%Y-%m-%d %H:%M:%S.%f}")
+        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-UDPs endTime: {endTime_alludp_dt:%Y-%m-%d %H:%M:%S.%f}")
+        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-lags startTime: {startTime_alllag_dt:%Y-%m-%d %H:%M:%S.%f}")
+        print(f"### {self.__name} get_graphs_allflow_with_lag Info: we got all-lags endTime: {endTime_alllag_dt:%Y-%m-%d %H:%M:%S.%f}")
+        if (abs(startTime_alludp_dt - startTime_alllag_dt) <= timedelta(hours=3)
+            and abs( endTime_alludp_dt - endTime_alllag_dt) <= timedelta(hours=3)
         ):
             print(f"### {self.__name} get_graphs_allflow_with_lag Info: Valid time of udp and lag. Prepared for visualization.")
         else:
@@ -213,7 +214,7 @@ class udp_visualizer:
         return graph_map
     
     """
-    @brief get_graph_oneflow_with_lag方法，绘制总流的曲线图，并携带卡顿区间信息
+    @brief get_graph_oneflow_with_lag方法，绘制**总流**的曲线图，并携带卡顿区间信息
     @param flows_map 流信息，字典数据结构，键值对：流标号，特征文件地址
     @param lag_path 卡顿区间列表的地址
     """
@@ -221,8 +222,8 @@ class udp_visualizer:
         flowsDF_map = {}            # 存储UDP特征矩阵
         features = []               # 存储待绘制的特征名称
         features_merged_map = {}    # 存储已经完成数据矩阵合并后的map结构
-        startTime_alludp = None     # 存储UDP特征下的开始时间，dt对象
-        endTime_alludp = None       # 存储UDP特征下的截至时间，dt对象
+        startTime_alludp_dt = None     # 存储UDP特征下的开始时间，dt对象
+        endTime_alludp_dt = None       # 存储UDP特征下的截至时间，dt对象
         lagtime_df = None           # 存储卡顿区间列表中读取的卡顿区间信息，DF对象
         graph_map = {}              # 存储绘制后的图片，键值对：特征名称，图片对象
 
@@ -232,6 +233,7 @@ class udp_visualizer:
             # 读取每一个流的UDP特征文件
             udpFeatures_path = os.path.join(value, "udp_features.csv")
             if os.path.exists(udpFeatures_path):
+                # input(f"wait for a moment? key:{key}, value{value}\n")
                 # 读入数据矩阵
                 flowDF = pd.read_csv(udpFeatures_path)
                 flowsDF_map[key] = flowDF.copy()
@@ -252,29 +254,38 @@ class udp_visualizer:
         print(f"### {self.__name} get_graph_oneflow_with_lag Info: {len(features)} features is already for visualization.They are: {features}")
         # 1.3 统计所有特征矩阵中的最大时间边界
         # UDP特征的最大时间边界即flow0总流的时间边界
-        startTime_alludp = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[0], 
+        startTime_alludp_dt = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[0], 
                                     "%Y-%m-%d %H:%M:%S")
-        endTime_alludp = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[-1], 
+        endTime_alludp_dt = dt.strptime(flowsDF_map[0]["startTime_of_curWin_UTC8"].iloc[-1], 
                                     "%Y-%m-%d %H:%M:%S")
 
         # 2. 读入卡顿列表，获取卡顿区间的日期、最大时间边界
         # 2.1 读入卡顿列表，将卡顿区间信息存储在DF数据结构中
         lagtime_df = read_lagList_v1(self.__lag_path)
+        startTime_alllag_dt = None
+        endTime_alllag_dt = None
+        # 2.2 获取卡顿列表中的开始截至时间
         if len(lagtime_df) == 0:
             print(f"!!! {self.__name} get_graph_oneflow_with_lag Warning: There is no lag in flow in file:{self.__lag_path}!")
+            # 如果卡顿列表为空，则默认填写卡顿区间的开始截至时间和UDP通道一致，表示区间匹配时，默认UDP和卡顿匹配成功即可
+            startTime_alllag_dt = startTime_alludp_dt
+            endTime_alllag_dt = endTime_alludp_dt
         else:
             print(f"### {self.__name} get_graph_oneflow_with_lag Info: There is {len(lagtime_df)} lags in file:{self.__lag_path}.")
+            startTime_alllag_dt = lagtime_df["lag_startTime"].iloc[0]
+            endTime_alllag_dt = lagtime_df["lag_endTime"].iloc[-1]
         # 2.2 读取第一行的lag_startTime和最后一行的lag_endTime作为卡顿区间的前后截至区间
-        startTime_alllag = lagtime_df["lag_startTime"].iloc[0]
-        endTime_alllag = lagtime_df["lag_endTime"].iloc[-1]
+        # startTime_alllag_dt = dt.strptime(lagtime_df["lag_startTime"].iloc[0], "%Y-%m-%d %H:%M:%S")
+        # endTime_alllag_dt = dt.strptime(lagtime_df["lag_endTime"].iloc[-1], "%Y-%m-%d %H:%M:%S")
+
         
         # 3. 匹配二者是否彼此吻合-是否同处于相同日期，且卡顿的前后边界是否处于特征文件边界以内
-        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-UDPs startTime: {startTime_alludp:%Y-%m-%d %H:%M:%S.%f}")
-        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-UDPs endTime: {endTime_alludp:%Y-%m-%d %H:%M:%S.%f}")
-        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-lags startTime: {startTime_alllag:%Y-%m-%d %H:%M:%S.%f}")
-        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-lags endTime: {endTime_alllag:%Y-%m-%d %H:%M:%S.%f}")
-        if (startTime_alludp <= startTime_alllag
-            and endTime_alludp >= endTime_alllag
+        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-UDPs startTime: {startTime_alludp_dt:%Y-%m-%d %H:%M:%S.%f}")
+        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-UDPs endTime: {endTime_alludp_dt:%Y-%m-%d %H:%M:%S.%f}")
+        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-lags startTime: {startTime_alllag_dt:%Y-%m-%d %H:%M:%S.%f}") if startTime_alllag_dt is not None else print(f"!!! {self.__name} get_graph_oneflow_with_lag Warning: There is no lag in flow in file:{self.__lag_path}!")
+        print(f"### {self.__name} get_graph_oneflow_with_lag Info: we got all-lags endTime: {endTime_alllag_dt:%Y-%m-%d %H:%M:%S.%f}") if endTime_alllag_dt is not None else print(f"!!! {self.__name} get_graph_oneflow_with_lag Warning: There is no lag in flow in file:{self.__lag_path}!")
+        if (abs(startTime_alludp_dt - startTime_alllag_dt) <= timedelta(hours=3)
+            and abs( endTime_alludp_dt - endTime_alllag_dt) <= timedelta(hours=3)
         ):
             print(f"### {self.__name} get_graph_oneflow_with_lag Info: Valid time of udp and lag. Prepared for visualization.")
         else:
@@ -349,6 +360,7 @@ class udp_visualizer:
     @brief  visual_in_windows方法，通过窗口而非文件的形式提供可视化结果
             旨在提供高精度的可视化观测
     @return 0表示工作正常，其他值表示工作异常
+    @note   需要说明的是：该函数将单一样本中的多流结构绘制在窗口中
     """
     def visual_in_windows(self):
         result = 0
@@ -396,6 +408,7 @@ class udp_visualizer:
     @brief  visual_in_files方法，通过文件而非窗口的形式提供可视化结果
             旨在持久化并提供概览
     @return 0表示工作正常，其他值表示工作异常
+    @note   需要说明的是：该函数将单一样本中的多流结构导出为文件
     """
     def visual_in_files(self, opt_dir: str):
         result = 0
@@ -435,10 +448,12 @@ class udp_visualizer:
         for feature_name, fig in graph_map.items():
             fig.savefig(os.path.join(opt_dir, feature_name + ".png"))
         
+        return result
+        
 
 
 if __name__ == "__main__":
-    sample_path = "../../output/flow_20260408_213029/video_20251031050010"
+    sample_path = "../../output/flow_20260422_155747/video_20251031050010"
     opt_dir = "../../test/test_for_visualization/opt"
     udp_visualizer = udp_visualizer(sample_path)
     # udp_visualizer.visual_in_windows()

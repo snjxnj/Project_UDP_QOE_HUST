@@ -482,6 +482,7 @@ class udp_extractor(Extractor):
 
     
     def extract(self, *args, **kwargs):
+        print(f"### {self.__name} - extract Info: Starting UDP feature extraction...")
         result = 0
         # 1. 遍历legal_dataFrame_st下的各个样本
         for index, row in self.__leagal_dataFrame_st.iterrows():
@@ -489,9 +490,11 @@ class udp_extractor(Extractor):
             id = row["ID"]
             scene = row["scene"]
             storage_Add = row["storage_Add"]
+            print(f"### {self.__name} - extract Info: Processing sample: {scene}-{id}...")
 
             # 2. 检查UDP特征提取所需的文件是否存在
             # 2.1 检查源文件merged_capfiles文件是否存在
+            print(f"### {self.__name} - extract Info: Checking merged_capFiles for sample: {scene}-{id}...")
             merCapFiles_dir = os.path.join(storage_Add, "merged_capFiles")
             merCapFiles_path = os.path.join(merCapFiles_dir, f"merged_{scene}_{id}.pcap")
             if not os.path.exists(merCapFiles_dir):
@@ -550,10 +553,11 @@ class udp_extractor(Extractor):
             # input("检查上下行原文件是否存在且合法")
 
             # 3. 获取需要观测的目标流通道
+            print(f"### {self.__name} - extract Info: Getting target flow channels for sample: {scene}-{id}...")
             # 读入overview_files文件
             # target_flow存储目标流通的信息，字典列表结构
             # 存储信息：local_ip, serv_ip, down_load, up_load, total_load
-            target_flow = []
+            target_flow: list[dict] = []
             try:
                 with open(overviewFile_path, "r") as f:
                     # 创建负载缓存-字典列表
@@ -591,6 +595,7 @@ class udp_extractor(Extractor):
             # input("检查提取器是否成功获取 目标流通道")
 
             # 4. 读入merge_capfiles文件，过滤出UDP数据包
+            print(f"### {self.__name} - extract Info: Filtering UDP packets in merged_capFiles for sample: {scene}-{id}...")
             # 读入merge_capfile
             merged_csv_df = pd.DataFrame()
             try:
@@ -608,6 +613,7 @@ class udp_extractor(Extractor):
             # input(f"检查udp数据包过滤器，过滤所得的长度是{len(udp_df)}，包含列明：{udp_df.columns}")
             
             # 5. 以target_flow作为过滤条件，过滤提取各流通到的上下行信息，并且汇总生成一个总应用通道的上下行信息
+            print(f"### {self.__name} - extract Info: Filtering UDP packets for each target flow channel in merged_capFiles for sample: {scene}-{id}...")
             up_df = pd.DataFrame() # 缓存，临时缓存处理中得到的上行信息
             down_df = pd.DataFrame() # 缓存，临时缓存处理中得到的下行信息
             up_total_df = pd.DataFrame() # 缓存，临时缓存总通道统计的上行信息
@@ -627,20 +633,40 @@ class udp_extractor(Extractor):
                                 | ((udp_df["frame.protocols"]=="sll:ethertype:ipv6:udp:data") 
                                     & (udp_df["ipv6.src"]==flow["serv_ip"]) 
                                     & (udp_df["ipv6.dst"]==flow["local_ip"]))].copy()
-                if up_df.empty or down_df.empty:
-                    print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output from udp_df is empty")
+                if not up_df.empty:
                     flow["up_df"] = up_df
-                    flow["down_df"] = down_df
+                    up_total_df = pd.concat([up_total_df, up_df], ignore_index=True)
+                else:
+                    print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output: up_df is empty")
+                    flow["up_df"] = pd.DataFrame()
                     result -= 1
-                    continue
+                if not down_df.empty:
+                    flow["down_df"] = down_df
+                    down_total_df = pd.concat([down_total_df, down_df], ignore_index=True)
+                else:
+                    print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output: down_df is empty")
+                    flow["down_df"] = pd.DataFrame()
+                    result -= 1
                 print(f"### {self.__name} - extractor Info: Got flow:{flow["local_ip"]}-{flow["serv_ip"]} from udp_df, up-size:{up_df.size}, down-size:{down_df.size}")
-                # 将上下行信息作为数据内容，写入target_flow字典中
-                flow["up_df"] = up_df
-                flow["down_df"] = down_df
-                # 汇总各通道的上下行信息
-                up_total_df = pd.concat([up_total_df, up_df], ignore_index=True)
-                down_total_df = pd.concat([down_total_df, down_df], ignore_index=True)
-            
+                
+                # if up_df.empty or down_df.empty:
+                #     if up_df.empty:
+                #         print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output: up_df is empty")
+                #         flow["up_df"] = up_df
+                #         result -= 1
+                #     if down_df.empty:
+                #         print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output: down_df is empty")
+                #         flow["down_df"] = down_df
+                #         result -= 1
+                #     continue
+                # print(f"### {self.__name} - extractor Info: Got flow:{flow["local_ip"]}-{flow["serv_ip"]} from udp_df, up-size:{up_df.size}, down-size:{down_df.size}")
+                # # 将上下行信息作为数据内容，写入target_flow字典中
+                # flow["up_df"] = up_df
+                # flow["down_df"] = down_df
+                # # 汇总各通道的上下行信息
+                # up_total_df = pd.concat([up_total_df, up_df], ignore_index=True)
+                # down_total_df = pd.concat([down_total_df, down_df], ignore_index=True)
+
             # 输出内容的合法性检测与总通道的时间排序
             if up_total_df.empty:
                 print(f"!!! {self.__name} - extractor Error: up_total_df is empty, something Wrong Happened.")
@@ -665,11 +691,13 @@ class udp_extractor(Extractor):
                 "down_df":      down_total_df.copy()
             }
             # 将总通道的上下行信息写入到target_flow当中
+            print(f"### {self.__name} - extract Info: Appending total flow channel to target_flow for sample: {scene}-{id}...")
             target_flow.append(total_item)
             
             # input(f"检查数据特征提取是否完备：{len(target_flow[0])}")
 
             # 6. 对target_flow中的各个流，以及应用总通道的上下行数据特征，进行统计
+            print(f"### {self.__name} - extract Info: Extracting UDP features for each target flow channel in merged_capFiles for sample: {scene}-{id}...")
             features = [] # 缓存，缓存采样过程中所有窗口的数据特征
             up_df = pd.DataFrame() # 缓存，暂时缓存上行流信息
             down_df = pd.DataFrame() # 缓存，暂时缓存下行流信息
@@ -677,8 +705,9 @@ class udp_extractor(Extractor):
                 # 6.1 由于特征分为上下行特征，我们首先从udp_df总信息框中过滤出目标flow的上下行流信息
                 up_df = flow["up_df"]
                 down_df = flow["down_df"]
-                if up_df.empty or down_df.empty:
-                    print(f"### {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output from udp_df is empty")
+                # 如果上下行流信息均为空，我们则直接跳过：旧版本为and逻辑，但是由于and逻辑会遗漏某一个空DF结构，进而触发程序错误
+                if up_df.empty and down_df.empty:
+                    print(f"!!! {self.__name} - extractor Warning: When extract flow:{flow["local_ip"]}-{flow["serv_ip"]}, the filter output from udp_df is empty")
                     flow["udp_features"] = pd.DataFrame()
                     result -= 1
                     continue
@@ -686,121 +715,169 @@ class udp_extractor(Extractor):
                 
                 # 6.2 获取整个通信过程中的起止时间
                 # 由于原始merged_csvfiles中的时间戳整数部分单位为秒级，所以我们限定起止时间均为秒级
-                start_time = int(min(up_df["frame.time_epoch"].min(), down_df["frame.time_epoch"].min()))
-                end_time = int(max(up_df["frame.time_epoch"].max(), down_df["frame.time_epoch"].max())) + 1 # 整形将会向下取一次，我们需要补充被省略的内容
+                if up_df.empty:
+                    start_time = int(down_df["frame.time_epoch"].min())
+                    end_time = int(down_df["frame.time_epoch"].max()) + 1 # 整形将会向下取一次，我们需要补充被省略的内容
+                elif down_df.empty:
+                    start_time = int(up_df["frame.time_epoch"].min())
+                    end_time = int(up_df["frame.time_epoch"].max()) + 1 # 整形将会向下取一次，我们需要补充被省略的内容
+                else:
+                    start_time = int(min(up_df["frame.time_epoch"].min(), down_df["frame.time_epoch"].min()))
+                    end_time = int(max(up_df["frame.time_epoch"].max(), down_df["frame.time_epoch"].max())) + 1 # 整形将会向下取一次，我们需要补充被省略的内容
                 
                 # 6.3 计算包抵达时间间隔
-                # 创建缓存
-                pre_time = up_df.loc[up_df.index[0], "frame.time_epoch"]
-                cur_time = 0
-                delays = []
                 # 上行包抵达间隔的统计
-                for index, row in up_df.iterrows():
-                    # 获取当前上行包的时间
-                    cur_time = row["frame.time_epoch"]
-                    # 计算当前上行包时间的前向差分，获取上行包间隔
-                    delay = cur_time - pre_time
-                    # 更新上行包时间戳
-                    pre_time = cur_time
-                    # 添加进包间隔列表
-                    delays.append(delay)
-                up_df["frame_interval"] = delays
-                # 缓存复位
-                pre_time = down_df.loc[down_df.index[0], "frame.time_epoch"]
-                cur_time = 0
-                delays = []
+                if not up_df.empty:
+                    # 创建缓存
+                    pre_time = up_df.loc[up_df.index[0], "frame.time_epoch"]
+                    cur_time = 0
+                    delays = []
+                    for index, row in up_df.iterrows():
+                        # 获取当前上行包的时间
+                        cur_time = row["frame.time_epoch"]
+                        # 计算当前上行包时间的前向差分，获取上行包间隔
+                        delay = cur_time - pre_time
+                        # 更新上行包时间戳
+                        pre_time = cur_time
+                        # 添加进包间隔列表
+                        delays.append(delay)
+                    up_df["frame_interval"] = delays
                 # 下行包抵达间隔的统计
-                for index, row in down_df.iterrows():
-                    # 获取当前上行包的时间
-                    cur_time = row["frame.time_epoch"]
-                    # 计算当前上行包时间的前向差分，获取上行包间隔
-                    delay = cur_time - pre_time
-                    # 更新上行包时间戳
-                    pre_time = cur_time
-                    # 添加进包间隔列表
-                    delays.append(delay)
-                down_df["frame_interval"] = delays
+                if not down_df.empty:
+                    # 缓存复位
+                    pre_time = down_df.loc[down_df.index[0], "frame.time_epoch"]
+                    cur_time = 0
+                    delays = []
+                    for index, row in down_df.iterrows():
+                        # 获取当前上行包的时间
+                        cur_time = row["frame.time_epoch"]
+                        # 计算当前上行包时间的前向差分，获取上行包间隔
+                        delay = cur_time - pre_time
+                        # 更新上行包时间戳
+                        pre_time = cur_time
+                        # 添加进包间隔列表
+                        delays.append(delay)
+                    down_df["frame_interval"] = delays
                 
                 # 6.4 对上下行流信息统计UDP数据特征
                 # 创建必要的变量
                 features = [] # 列表，存储各个采样窗口下数据特征的字典信息，最终将会以字典列表的形式构建DF数据结构
-                up_tailTime_of_last_second = up_df.loc[up_df.index[0], 'frame.time_epoch']          # 获取上行流数据中第一个包的时间戳
-                down_tailTime_of_last_second = down_df.loc[down_df.index[0], 'frame.time_epoch']    # 获取下行流数据中第一个包的时间戳
+                # 获取上行流数据中第一个包的时间戳
+                up_tailTime_of_last_second = up_df.loc[up_df.index[0], 'frame.time_epoch'] if not up_df.empty else -1
+                # 获取下行流数据中第一个包的时间戳
+                down_tailTime_of_last_second = down_df.loc[down_df.index[0], 'frame.time_epoch'] if not down_df.empty else -1
                 for startTime_of_curWindow in np.arange(start_time, end_time, self.__width):
                     # 限定当前采样窗口的前后边界
                     endTime_of_curWindow = startTime_of_curWindow + self.__width
                     # 将Unix时间戳标准下的startTime_of_curWindow转换为北京时间，便于后续比较
                     curTime_of_UTC8 = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(startTime_of_curWindow))
-                    # 根据采样窗口的前后边界，截取窗口内的上下行信息
-                    upDF_in_curWindow = up_df[(up_df['frame.time_epoch'] >= startTime_of_curWindow) &
-                                                (up_df['frame.time_epoch'] < endTime_of_curWindow)]
-                    downDF_in_curWindow = down_df[(down_df['frame.time_epoch'] >= startTime_of_curWindow) &
-                                                (down_df['frame.time_epoch'] < endTime_of_curWindow)]
-
-                    #获取各项特征
-                    # 包数量基础上的统计特征
-                    # 当前采样窗口内的上下行包数量
-                    up_numPackets = len(upDF_in_curWindow)
-                    down_numPackets = len(downDF_in_curWindow)
-
-                    # 包数量突变率统计
-                    up_mutation_numPackets = 0
-                    down_mutation_numPackets = 0
-                    if len(features) == 0:
+                    
+                    # 获取上行数据特征
+                    if up_df.empty:
+                        up_numPackets = 0 
                         up_mutation_numPackets = 0
-                        down_mutation_numPackets = 0
-                    else:
-                        up_pre_numPackets = features[-1]["up_numPackets"]
-                        down_pre_numPackets = features[-1]["down_numPackets"]
-                        # up_mutation_numPackets = (up_numPackets - up_pre_numPackets) / (up_pre_numPackets + self.__epsilon)
-                        # down_mutation_numPackets = (down_numPackets - down_pre_numPackets) / (down_pre_numPackets + self.__epsilon)
-                        up_mutation_numPackets = (up_numPackets - up_pre_numPackets) / up_pre_numPackets if up_pre_numPackets != 0 else 0
-                        down_mutation_numPackets = (down_numPackets - down_pre_numPackets) / down_pre_numPackets if down_pre_numPackets != 0 else 0
-
-                    # 包长度基础上的统计特征
-                    # 当前窗口内上下行包长度的均值
-                    up_mean_lenPackets = upDF_in_curWindow['frame.len'].mean() if not upDF_in_curWindow.empty else 0
-                    down_mean_lenPackets = downDF_in_curWindow['frame.len'].mean() if not downDF_in_curWindow.empty else 0
-                    # 当前窗口内上下行的流量
-                    up_dataStream_lenPackets = upDF_in_curWindow['frame.len'].sum()
-                    down_dataStream_lenPackets = downDF_in_curWindow['frame.len'].sum()
-
-                    # 包抵达时间戳基础上的统计特征
-                    # 包间隔构建的均值、最值、标准差、CV系数
-                    # 上行数据
-                    if not upDF_in_curWindow.empty:
-                        # 更新均值、最值、标准差
-                        up_mean_intPackets = upDF_in_curWindow["frame_interval"].mean()
-                        up_min_intPackets = upDF_in_curWindow["frame_interval"].min()
-                        up_max_intPackets = upDF_in_curWindow["frame_interval"].max()
-                        up_std_intPackets = upDF_in_curWindow["frame_interval"].std() if not (upDF_in_curWindow.index.size == 1) else 0
-                        up_cv_intPacktes = up_std_intPackets / (up_mean_intPackets + self.__epsilon)
-
-                        # 更新当前窗口中最后一个数据包时间戳，为下一个窗口统计包间隔提供参考
-                        up_tailTime_of_last_second = upDF_in_curWindow.iloc[-1]["frame.time_epoch"]
-                    else:
-                        up_mean_intPackets = startTime_of_curWindow + 1 - up_tailTime_of_last_second
-                        up_min_intPackets = startTime_of_curWindow + 1 - up_tailTime_of_last_second
-                        up_max_intPackets = startTime_of_curWindow + 1 - up_tailTime_of_last_second
+                        up_mean_lenPackets = 0
+                        up_dataStream_lenPackets = 0
+                        up_mean_intPackets = 0
+                        up_min_intPackets = 0
+                        up_max_intPackets = 0
                         up_std_intPackets = 0
                         up_cv_intPacktes = 0
-                    # 下行数据
-                    if not downDF_in_curWindow.empty:
-                        # 更新均值、最值、标准差
-                        down_mean_intPackets = downDF_in_curWindow["frame_interval"].mean()
-                        down_min_intPackets = downDF_in_curWindow["frame_interval"].min()
-                        down_max_intPackets = downDF_in_curWindow["frame_interval"].max()
-                        down_std_intPackets = downDF_in_curWindow["frame_interval"].std() if not (upDF_in_curWindow.index.size == 1) else 0
-                        down_cv_intPacktes = down_std_intPackets / (down_mean_intPackets + self.__epsilon)
-
-                        # 更新当前窗口中最后一个数据包时间戳，为下一个窗口统计包间隔提供参考
-                        down_tailTime_of_last_second = downDF_in_curWindow.iloc[-1]["frame.time_epoch"]
                     else:
-                        down_mean_intPackets = startTime_of_curWindow + 1 - down_tailTime_of_last_second
-                        down_min_intPackets = startTime_of_curWindow + 1 - down_tailTime_of_last_second
-                        down_max_intPackets = startTime_of_curWindow + 1 - down_tailTime_of_last_second
+                        # 根据采样窗口的前后边界，截取窗口内的上下行信息
+                        upDF_in_curWindow = up_df[(up_df['frame.time_epoch'] >= startTime_of_curWindow) &
+                            (up_df['frame.time_epoch'] < endTime_of_curWindow)]
+                        #获取各项特征
+                        # 包数量基础上的统计特征
+                        # 当前采样窗口内的上行包数量
+                        up_numPackets = len(upDF_in_curWindow)
+                        # 包数量突变率统计
+                        up_mutation_numPackets = 0
+                        if len(features) == 0:
+                            up_mutation_numPackets = 0
+                        else:
+                            up_pre_numPackets = features[-1]["up_numPackets"]
+                            # up_mutation_numPackets = (up_numPackets - up_pre_numPackets) / (up_pre_numPackets + self.__epsilon)
+                            up_mutation_numPackets = (up_numPackets - up_pre_numPackets) / up_pre_numPackets if up_pre_numPackets != 0 else 0
+                        # 包长度基础上的统计特征
+                        # 当前窗口内上下行包长度的均值
+                        up_mean_lenPackets = upDF_in_curWindow['frame.len'].mean() if not upDF_in_curWindow.empty else 0
+                        # 当前窗口内上下行的流量
+                        up_dataStream_lenPackets = upDF_in_curWindow['frame.len'].sum()
+                        # 包抵达时间戳基础上的统计特征
+                        # 包间隔构建的均值、最值、标准差、CV系数
+                        # 上行数据
+                        if not upDF_in_curWindow.empty:
+                            # 更新均值、最值、标准差
+                            up_mean_intPackets = upDF_in_curWindow["frame_interval"].mean()
+                            up_min_intPackets = upDF_in_curWindow["frame_interval"].min()
+                            up_max_intPackets = upDF_in_curWindow["frame_interval"].max()
+                            up_std_intPackets = upDF_in_curWindow["frame_interval"].std() if not (upDF_in_curWindow.index.size == 1) else 0
+                            up_cv_intPacktes = up_std_intPackets / (up_mean_intPackets + self.__epsilon)
+
+                            # 更新当前窗口中最后一个数据包时间戳，为下一个窗口统计包间隔提供参考
+                            up_tailTime_of_last_second = upDF_in_curWindow.iloc[-1]["frame.time_epoch"]
+                        else:
+                            up_mean_intPackets = startTime_of_curWindow + 1 - up_tailTime_of_last_second
+                            up_min_intPackets = startTime_of_curWindow + 1 - up_tailTime_of_last_second
+                            up_max_intPackets = startTime_of_curWindow + 1 - up_tailTime_of_last_second
+                            up_std_intPackets = 0
+                            up_cv_intPacktes = 0
+
+                    # 获取下行数据特征
+                    if down_df.empty:
+                        down_numPackets = 0 
+                        down_mutation_numPackets = 0
+                        down_mean_lenPackets = 0
+                        down_dataStream_lenPackets = 0
+                        down_mean_intPackets = 0
+                        down_min_intPackets = 0
+                        down_max_intPackets = 0
                         down_std_intPackets = 0
                         down_cv_intPacktes = 0
+                    else:
+                        # 根据采样窗口的前后边界，截取窗口内的上下行信息
+                        downDF_in_curWindow = down_df[(down_df['frame.time_epoch'] >= startTime_of_curWindow) & 
+                                                (down_df['frame.time_epoch'] < endTime_of_curWindow)]
+                        #获取各项特征
+                        # 包数量基础上的统计特征
+                        # 当前采样窗口内的上下行包数量
+                        down_numPackets = len(downDF_in_curWindow)
+
+                        # 包数量突变率统计
+                        down_mutation_numPackets = 0
+                        if len(features) == 0:
+                            down_mutation_numPackets = 0
+                        else:
+                            down_pre_numPackets = features[-1]["down_numPackets"]
+                            # down_mutation_numPackets = (down_numPackets - down_pre_numPackets) / (down_pre_numPackets + self.__epsilon)
+                            down_mutation_numPackets = (down_numPackets - down_pre_numPackets) / down_pre_numPackets if down_pre_numPackets != 0 else 0
+
+                        # 包长度基础上的统计特征
+                        # 当前窗口内上下行包长度的均值
+                        down_mean_lenPackets = downDF_in_curWindow['frame.len'].mean() if not downDF_in_curWindow.empty else 0
+                        # 当前窗口内上下行的流量
+                        down_dataStream_lenPackets = downDF_in_curWindow['frame.len'].sum()
+
+                        # 包抵达时间戳基础上的统计特征
+                        # 包间隔构建的均值、最值、标准差、CV系数
+                        # 下行数据
+                        if not downDF_in_curWindow.empty:
+                            # 更新均值、最值、标准差
+                            down_mean_intPackets = downDF_in_curWindow["frame_interval"].mean()
+                            down_min_intPackets = downDF_in_curWindow["frame_interval"].min()
+                            down_max_intPackets = downDF_in_curWindow["frame_interval"].max()
+                            down_std_intPackets = downDF_in_curWindow["frame_interval"].std() if not (upDF_in_curWindow.index.size == 1) else 0
+                            down_cv_intPacktes = down_std_intPackets / (down_mean_intPackets + self.__epsilon)
+
+                            # 更新当前窗口中最后一个数据包时间戳，为下一个窗口统计包间隔提供参考
+                            down_tailTime_of_last_second = downDF_in_curWindow.iloc[-1]["frame.time_epoch"]
+                        else:
+                            down_mean_intPackets = startTime_of_curWindow + 1 - down_tailTime_of_last_second
+                            down_min_intPackets = startTime_of_curWindow + 1 - down_tailTime_of_last_second
+                            down_max_intPackets = startTime_of_curWindow + 1 - down_tailTime_of_last_second
+                            down_std_intPackets = 0
+                            down_cv_intPacktes = 0
 
                     # 将3个方向的数据特征汇总合并成为一个字典结构
                     features_map = {
@@ -849,7 +926,7 @@ class udp_extractor(Extractor):
                 result -= 1
                 continue
             # 创建udp流通道数据的总览文件，向其中写入各流通道的总体数据情况
-            udp_overview_file = os.path.join(output_dir, ".txt")
+            udp_overview_file = os.path.join(output_dir, "overview.txt")
             try:
                 with open(udp_overview_file, "w", encoding="utf-8") as f:
                     f.write("target flows under UDP-Extractor:\n")
@@ -868,6 +945,8 @@ class udp_extractor(Extractor):
             # 遍历各个目标流通道，将UDP数据特征持久化到样本存储目录下
             for i, flow in enumerate(target_flow):
                 sample_dir = os.path.join(output_dir, f"{scene}_{id}_flow{i}")
+                if flow["udp_features"].empty:
+                    continue
                 try:
                     os.makedirs(sample_dir, exist_ok=False)
                     print(f"### {self.__name} - extracotr Info: Successfully making ourput-dir for sample:{scene}-{id}, {flow["local_ip"]}<->{flow["serv_ip"]}.")
@@ -881,7 +960,11 @@ class udp_extractor(Extractor):
                     result -= 1
                     continue
             # 完成该样本的UDP数据特征抓取
+            print(f"### {self.__name} - extractor Info: Successfully extract {len(target_flow)} flows' UDP features for sample:{scene}-{id}!")
+            print("-"*30)
         # 完成所有样本的UDP数据特征抓取
+        print(f"### {self.__name} - extractor Info: Successfully extract {result} flows' UDP features!")
+        print("-"*30 + "\n")
         return result
 
     def toString(self) -> str:
