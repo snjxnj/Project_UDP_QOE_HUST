@@ -3,6 +3,13 @@
 cd ./workflow/components/modem_05
 python LSTM_20250424.python
 
+依赖关系：
+运行现规范模型脚本需要3个依赖关系：
+1. components/lib/src/data_loader
+2. components/lib/src/data_preprocess
+3. components/model/visual_06/visualier_in_modelEval
+确保上述文件依赖关系成功载入，可以启动现规范的模型脚本。
+
 截至26年5月，新规范的模型文件的可视化提供2个可调参数：
 is_export   True表示不进行窗口显示，进行持久可视化；False表示进行窗口显示，不进行持久可视化。
 opt_path    混淆矩阵、损失准确曲线的输出路径；同时，当需要持久化输出模型测试可视化时，可视化png图片将会输出在该目录下
