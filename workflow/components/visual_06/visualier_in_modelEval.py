@@ -89,6 +89,41 @@ class vis_in_modelEval:
                 ax2.tick_params(axis='y')
 
                 # 绘制背景颜色区间
+                # 辅助函数：将一个区间切分为被重叠区间扣除后的非重叠子区间
+                def split_by_overlap(interval, overlap_intervals):
+                    """
+                    将给定区间切分为多个非重叠子区间，排除所有重叠区间
+                    interval: (start, end)
+                    overlap_intervals: [(start, end), ...]
+                    返回: [(start, end), ...] 非重叠子区间列表
+                    """
+                    result = []
+                    current_start, current_end = interval
+                    
+                    # 找出所有与当前区间相交的重叠区间
+                    relevant_overlaps = []
+                    for o_start, o_end in overlap_intervals:
+                        # 检查是否有交集
+                        if current_start < o_end and current_end > o_start:
+                            relevant_overlaps.append((o_start, o_end))
+                    
+                    # 按起始位置排序
+                    relevant_overlaps.sort(key=lambda x: x[0])
+                    
+                    # 切分区间
+                    pos = current_start
+                    for o_start, o_end in relevant_overlaps:
+                        if pos < o_start:
+                            # 添加非重叠部分
+                            result.append((pos, o_start))
+                        pos = max(pos, o_end)
+                    
+                    # 如果还有剩余部分
+                    if pos < current_end:
+                        result.append((pos, current_end))
+                    
+                    return result
+                
                 # 找出人工标签为1的区间（红色）
                 label_intervals = []
                 start = None
@@ -122,29 +157,21 @@ class vis_in_modelEval:
                         if overlap_start < overlap_end:
                             overlap_intervals.append((overlap_start, overlap_end))
 
-                # 绘制重叠区间（紫色，需要先绘制以避免被覆盖）
+                # 绘制重叠区间（紫色）
                 for start, end in overlap_intervals:
-                    ax1.axvspan(start, end, alpha=0.3, color='purple', label='Overlap (Label & Pred)')
+                    ax1.axvspan(start, end, alpha=0.6, color='purple', label='Overlap (Label & Pred)')
 
-                # 绘制标签区间（红色）
+                # 绘制标签区间（红色）- 只绘制非重叠部分
                 for start, end in label_intervals:
-                    is_overlap = False
-                    for o_start, o_end in overlap_intervals:
-                        if start >= o_start and end <= o_end:
-                            is_overlap = True
-                            break
-                    if not is_overlap:
-                        ax1.axvspan(start, end, alpha=0.3, color='red', label='Manual Label')
+                    non_overlap_parts = split_by_overlap((start, end), overlap_intervals)
+                    for part_start, part_end in non_overlap_parts:
+                        ax1.axvspan(part_start, part_end, alpha=0.3, color='red', label='Manual Label')
 
-                # 绘制预测区间（蓝色）
+                # 绘制预测区间（蓝色）- 只绘制非重叠部分
                 for start, end in pred_intervals:
-                    is_overlap = False
-                    for o_start, o_end in overlap_intervals:
-                        if start >= o_start and end <= o_end:
-                            is_overlap = True
-                            break
-                    if not is_overlap:
-                        ax1.axvspan(start, end, alpha=0.3, color='blue', label='Model Prediction')
+                    non_overlap_parts = split_by_overlap((start, end), overlap_intervals)
+                    for part_start, part_end in non_overlap_parts:
+                        ax1.axvspan(part_start, part_end, alpha=0.3, color='blue', label='Model Prediction')
 
                 # 添加图例
                 handles1, labels1 = ax1.get_legend_handles_labels()
