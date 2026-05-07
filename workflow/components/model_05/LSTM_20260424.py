@@ -8,13 +8,20 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 import os
 import re
+import sys
 
 # 将components目录添加到python路径中
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-components_dir = os.path.join(project_root, "components")
-sys.path.append(components_dir)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+workflow_dir = os.path.abspath(os.path.join(script_dir, "..", ".."))
+components_dir = os.path.join(workflow_dir, "components")
+sys.path.append(workflow_dir)  # 添加workflow目录到路径中
+print(f"[DEBUG] workflow_dir: {workflow_dir}")
+print(f"[DEBUG] components_dir: {components_dir}")
+print(f"[DEBUG] sys.path: {sys.path}")
+
 # 加载本地包
 import components.lib.data_loader.load_files as load_files
+from components.visual_06.visualier_in_modelEval import vis_in_modelEval
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "LSTM")
@@ -129,7 +136,7 @@ class LSTMModel:
 	def build_dataframe_from_test_info(self, test_dict):
 		rows = []
 
-		file_name = test_dict['file_name']
+		file_path = test_dict['file_path']
 		timestamps = test_dict.get('curTime_of_UTC8', [None] * test_dict['test_length'])
 		true_labels = test_dict['label']
 		probs = test_dict['probability']
@@ -139,7 +146,7 @@ class LSTMModel:
 		n = test_dict['test_length']
 		for i in range(n):
 			rows.append({
-				'file_name': file_name,
+				'file_path': file_path,
 				'curTime_of_UTC8': timestamps[i] if timestamps and i < len(timestamps) else None,
 				'label': true_labels[i],
 				'probability': probs[i],
@@ -148,7 +155,7 @@ class LSTMModel:
 		return pd.DataFrame(rows)
 	
 	def visualize_all_tests(self, prob, pred):
-		# 原始dict：{'file_name': file_name, 'timestamps/curTime_of_UTC8': timestamp_list, 'label': y, 'test_length': test_length}
+		# 原始dict：{'file_path': file_path, 'timestamps/curTime_of_UTC8': timestamp_list, 'label': y, 'test_length': test_length}
 		# 构建完整的dict 
 		start_idx = 0
 		for item in self.test_info:
@@ -173,8 +180,9 @@ class LSTMModel:
 			df = self.build_dataframe_from_test_info(item)
 			
 			# 可视化接口
-			# plot_output_for_models(df)
-		# dict：{'file_name': file_name, 'timestamps/curTime_of_UTC8': timestamp_list, 'label': y, 'test_length': test_length, 'y_prob': full_prob, 'y_pred': full_class}
+			visualier = vis_in_modelEval()
+			visualier.visual(test_info=df, opt_path=OUTPUT_DIR, is_export=True)
+		# dict：{'file_path': file_path, 'timestamp/curTime_of_UTC8': timestamp_list, 'label': y, 'test_length': test_length, 'y_prob': full_prob, 'y_pred': full_class}
 	
 	def evaluate_model(self):
 		"""评估模型性能"""
@@ -236,7 +244,7 @@ class LSTMModel:
 # 主函数
 def main():
 	# 指定包含CSV文件的目录路径
-	directory_path = '.'  # 当前目录
+	directory_path = "..\\..\\src\\datasets\\gaming_wuhan"  # 当前目录
 	used_seed = 345253545
 
 	# 创建并训练LSTM模型

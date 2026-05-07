@@ -1,14 +1,8 @@
 import pandas as pd
 import numpy as np
 import os
-import sys
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
-workflow_dir = os.path.abspath(os.path.join(script_dir, "..", ".."))
-components_dir = os.path.join(workflow_dir, "components")
-sys.path.append(workflow_dir)
-
-import components.lib.src.data_preprocess.select_tests_vals as get_tvs
+import src.data_preprocess.select_tests_vals as get_tvs
 
 def create_sequences(X, y, length=20):
 	"""
@@ -72,7 +66,7 @@ def load_single_file_for_multiple(file_path, model, is_test=False):
 			timestamp_list = df[timestamp_col].tolist()
 		else:
 			raise ValueError(f"测试集文件 {file_path} 必须包含 'timestamp' 或 'curTime_of_UTC8' 列")
-		file_info = {'file_path': file_path, f'{timestamp_col}': timestamp_list, 'label': y, 'test_length': test_length}
+		file_info = {'file_name': file_name, f'{timestamp_col}': timestamp_list, 'label': y, 'test_length': test_length}
 
 	return X, y, df, file_info
 
